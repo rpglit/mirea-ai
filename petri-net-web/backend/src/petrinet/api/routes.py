@@ -70,6 +70,20 @@ def _load_session(store: SessionStore, session_id: str) -> dict[str, str | None]
     return row
 
 
+def _arc_maps(net: PetriNet) -> tuple[dict[str, dict[str, int]], dict[str, dict[str, int]]]:
+    """Canonical arc maps {transition: {place: weight}} for API responses.
+
+    Example (smoke net): ``{"t1": {"p1": 2}, "t2": {"p1": 1, "p6": 1}, ...}``.
+    """
+    inputs = {
+        t: {p: w for p, w in arcs} for t, arcs in zip(net.transitions, net.inputs, strict=True)
+    }
+    outputs = {
+        t: {p: w for p, w in arcs} for t, arcs in zip(net.transitions, net.outputs, strict=True)
+    }
+    return inputs, outputs
+
+
 def _parse_to_net(body: ParseRequest) -> PetriNet:
     """Parse the request payload with the channel named by ``body.format``.
 
@@ -134,6 +148,8 @@ def parse(body: ParseRequest) -> dict[str, object]:
     store.set_state(session_id, json.dumps(marking_to_list(net.initial_marking)), steps_to_json([]))
     return {
         "initial_marking": marking_to_list(net.initial_marking),
+        "inputs": _arc_maps(net)[0],
+        "outputs": _arc_maps(net)[1],
         "places": list(net.places),
         "session_id": session_id,
         "transitions": list(net.transitions),
@@ -599,7 +615,9 @@ def get_session(session_id: str) -> dict[str, object]:
         "current_marking": json.loads(cast(str, row["current_marking"])),
         "graph_built": row["graph_json"] is not None,
         "input_format": row["input_format"],
+        "inputs": model_raw.get("inputs"),
         "name": row["name"],
+        "outputs": model_raw.get("outputs"),
         "places": model_raw.get("places"),
         "report_computed": row["report_json"] is not None,
         "session_id": session_id,

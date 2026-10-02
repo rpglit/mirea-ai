@@ -61,6 +61,20 @@ def test_parse_text_smoke(client: TestClient) -> None:
     session_id = body["session_id"]
     assert isinstance(session_id, str)
     assert len(session_id) == 32
+    assert body["inputs"] == {
+        "t1": {"p1": 2},
+        "t2": {"p1": 1, "p6": 1},
+        "t3": {"p2": 1},
+        "t4": {"p2": 1, "p3": 1, "p4": 2},
+        "t5": {"p5": 2},
+    }
+    assert body["outputs"] == {
+        "t1": {"p2": 1},
+        "t2": {"p3": 2},
+        "t3": {"p4": 3},
+        "t4": {"p5": 1, "p6": 1},
+        "t5": {"p1": 1, "p3": 1},
+    }
 
 
 def test_parse_json_and_form_equivalent(client: TestClient) -> None:

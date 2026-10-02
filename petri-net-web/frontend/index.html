@@ -4,9 +4,125 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Сети Петри</title>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <h1>Сети Петри</h1>
-  <p>Скелет приложения — интерфейс будет построен на этапе 4.5.</p>
+  <header>
+    <h1>Сети Петри</h1>
+    <span id="session-badge" class="hidden"></span>
+  </header>
+
+  <nav class="tabs" id="input-tabs">
+    <button id="tab-text" class="tab active" data-format="text">Текстовый ввод</button>
+    <button id="tab-json" class="tab" data-format="json">JSON</button>
+    <button id="tab-form" class="tab" data-format="form">Форма</button>
+  </nav>
+
+  <section id="panel-text" class="input-panel active">
+    <label for="input-text">Описание сети в математической нотации</label>
+    <textarea id="input-text" rows="10" spellcheck="false">S = (P, T, I, O, µ),
+P = {p1, p2, p3, p4, p5, p6}, T = {t1, t2, t3, t4, t5},
+I(t1) = {p1, p1}, O(t1) = {p2},
+I(t2) = {p1, p6}, O(t2) = {p3, p3},
+I(t3) = {p2},       O(t3) = {p4, p4, p4},
+I(t4) = {p2, p3, p4, p4}, O(t4) = {p5, p6},
+I(t5) = {p5, p5},   O(t5) = {p1, p3},
+µ = (7, 4, 2, 5, 4, 3).</textarea>
+    <button id="btn-run-text" class="primary">Проанализировать</button>
+  </section>
+
+  <section id="panel-json" class="input-panel">
+    <label for="input-json">JSON-описание (схема в документации)</label>
+    <textarea id="input-json" rows="10" spellcheck="false" placeholder='{"places": ["p1"], "transitions": ["t1"], "inputs": {...}, "outputs": {...}, "initial_marking": {...}}'></textarea>
+    <button id="btn-run-json" class="primary">Проанализировать</button>
+  </section>
+
+  <section id="panel-form" class="input-panel">
+    <label for="form-places">Позиции (через запятую)</label>
+    <input id="form-places" placeholder="p1, p2, p3">
+    <label for="form-transitions">Переходы (через запятую)</label>
+    <input id="form-transitions" placeholder="t1, t2">
+    <label>Дуги</label>
+    <div id="arcs-list"></div>
+    <button id="btn-add-arc">+ Добавить дугу</button>
+    <label for="form-marking">Начальная маркировка (через запятую, в порядке позиций)</label>
+    <input id="form-marking" placeholder="7, 4, 2, 5, 4, 3">
+    <button id="btn-run-form" class="primary">Проанализировать</button>
+  </section>
+
+  <p id="status-line" class="status" role="status"></p>
+
+  <section id="analysis" class="hidden">
+    <div class="canvas-row">
+      <div>
+        <div id="canvas-net" class="canvas active-canvas" title="Клик — выбрать для PNG-экспорта"></div>
+        <div class="canvas-caption">Сеть Петри</div>
+      </div>
+      <div>
+        <div id="canvas-graph" class="canvas" title="Клик — перейти к маркировке"></div>
+        <div class="canvas-caption">Граф достижимости</div>
+      </div>
+    </div>
+
+    <div id="build-row">
+      <select id="graph-mode">
+        <option value="auto">Авто</option>
+        <option value="bounded">Ограниченный</option>
+        <option value="coverability">Покрываемость (Кэрп–Миллер)</option>
+      </select>
+      <button id="btn-build-graph" class="primary">Построить граф</button>
+      <span id="graph-stats" class="status"></span>
+    </div>
+
+    <div id="step-panel">
+      <h3>Пошаговое проигрывание</h3>
+      <div id="active-list" class="transition-buttons"></div>
+      <div class="step-buttons">
+        <button id="btn-step" class="primary">Шаг</button>
+        <button id="btn-undo">Отмена</button>
+        <button id="btn-reset">Сброс</button>
+      </div>
+      <div id="history-list" class="history"></div>
+    </div>
+
+    <div id="props-panel">
+      <h3>Свойства</h3>
+      <div id="props-caveat" class="caveat hidden">Дискретная (ω) приближённая оценка — сеть неограниченна</div>
+      <dl id="props"></dl>
+    </div>
+
+    <div id="query-row">
+      <label for="query-marking">Проверка маркировки (через запятую):</label>
+      <input id="query-marking" placeholder="7, 4, 2, 5, 4, 3">
+      <button id="btn-query-reach">Достижима?</button>
+      <button id="btn-query-cover">Покрывается?</button>
+      <span id="query-result" class="status"></span>
+    </div>
+
+    <div id="export-row">
+      <button id="btn-export-png">PNG графа</button>
+      <button id="btn-export-json">JSON отчёта</button>
+      <button id="btn-export-csv">CSV маркировок</button>
+    </div>
+
+    <div id="sessions-row">
+      <button id="btn-sessions">История сессий</button>
+      <div id="sessions-panel" class="hidden">
+        <ul id="sessions-list"></ul>
+      </div>
+    </div>
+  </section>
+
+  <div id="toast" class="toast hidden" role="alert"></div>
+
+  <script src="https://unpkg.com/cytoscape@3.30.2/dist/cytoscape.umd.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/exports.js"></script>
+  <script src="js/net-canvas.js"></script>
+  <script src="js/graph-canvas.js"></script>
+  <script src="js/step-panel.js"></script>
+  <script src="js/properties-panel.js"></script>
+  <script src="js/sessions.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
