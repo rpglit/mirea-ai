@@ -11,6 +11,7 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       DB_PATH: ${DB_PATH:-/data/sessions.db}
       REACH_MAX_MARKINGS: ${REACH_MAX_MARKINGS:-50000}
+      PETRINET_STATIC_DIR: ${PETRINET_STATIC_DIR:-/app/static}
     volumes:
       - petri-data:/data
     healthcheck:

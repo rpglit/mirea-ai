@@ -77,4 +77,11 @@ Placement: FastAPI exception handlers for all five classes are registered in `cr
 - One body shape lets the UI render a single error panel (NFR-006: `message` is shown to the user in Russian, `code` drives client behavior).
 - The 413 `details.suggestion` powers the mandated switch to coverability mode after a cap abort (NFR-002 c3, FR-006 c4); the 404 satisfies FR-022 c4 (typed 404 after session deletion).
 - The 200-char input prefix keeps error logs bounded and grep-able without persisting full user input at ERROR level.
-- Adding a new typed error later is a three-line change — subclass, table row, handler — keeping the mapping exhaustive and documented in one place.
+- Adding a new typed error later is a three-line change — subclass, table row,
+  handler — keeping the mapping exhaustive and documented in one place.
+- Known deviation (documented, accepted in the Phase-4.4 review): pydantic
+  schema-level rejects (e.g. a wrong `format` literal) and truly unexpected
+  exceptions use FastAPI's native bodies (`{"detail": ...}` 422 / plain-text
+  500) rather than the ADR body; the five domain error classes always produce
+  the ADR body, and error log lines carry `error_code`, `session_id`, and
+  `duration_ms` (middleware-stamped).

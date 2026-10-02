@@ -306,7 +306,7 @@ anything else is 422 `validation_failed`.
 
 | method | path                          | request                                                              | response (200/201)                                                       | errors                                      |
 | ------ | ----------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------- |
-| POST   | `/parse`                      | `{format: "text"\|"json"\|"form", payload}`                          | 201 `{session_id, places, transitions, initial_marking}`                 | 422 `parse_failed`, `validation_failed`     |
+| POST   | `/parse`                      | `{format: "text"\|"json"\|"form", payload, name?}`                   | 201 `{session_id, places, transitions, initial_marking}`                 | 422 `parse_failed`, `validation_failed`     |
 | POST   | `/graph`                      | `{session_id, mode?}` (`auto`\|`bounded`\|`coverability`, default `auto`) | 200 `{kind, node_count, edge_count, capped, structure: {nodes, edges}}` (deterministic, ADR-0002 ids) | 404 `unknown_session`, 413 `cap_exceeded`   |
 | POST   | `/properties`                 | `{session_id, queries?}` (`reachable_marking?`, `coverable_marking?`) | 200 full report + query answers (sample below)                          | 404 `unknown_session`, 422 `validation_failed` |
 | POST   | `/fire`                       | `{session_id, action: "fire"\|"undo"\|"reset", transition?}`         | 200 `{current_marking, active_transitions, history_tail}`                | 404 `unknown_session`, 409 `transition_not_enabled` |
