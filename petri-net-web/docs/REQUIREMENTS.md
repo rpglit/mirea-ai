@@ -240,9 +240,10 @@ Acceptance criteria:
    ones.
 3. Net level = the minimum per-transition level (order L0 < L1 < L2 < L3 <
    L4). A net at L4 is deadlock-free (the deadlock list is empty).
-4. Fixture: for the smoke net all five transitions are L3 (each lies on a
-   reachable cycle; none is L4 — the 23 reachable deadlocks break strong
-   liveness), so the net level = L3 (D-012, corrected per D-031).
+4. Fixture: for the smoke net all five transitions are L1 (each occurs, but
+   no reachable cycle contains any transition — the potential
+   W = 3·p1 + 4·p2 + p3 + p4 + 3·p5 + 2·p6 strictly decreases per firing,
+   so every run ends in a deadlock; D-012, D-035), so the net level = L1.
 5. For unbounded nets the level is reported on the coverability tree with the
    ω-approximation caveat (A-05; FR-006 criterion 3).
 
@@ -435,8 +436,8 @@ Acceptance criteria:
    deadlock list, dead transitions, home state, deadlock-free (FR-005…FR-014).
 2. Fixture: for the smoke net the report contains 1503 markings / 4983 edges
    (D-009), per-place maxima [10, 8, 16, 29, 8, 10] and global k = 29
-   (D-010), 23 deadlocks (D-011), per-transition levels all L3 and net
-   liveness level L3 (D-012, D-031), home state = false (D-013), bounded =
+   (D-010), 23 deadlocks (D-011), per-transition levels all L1 and net
+   liveness level L1 (D-012, D-035), home state = false (D-013), bounded =
    true and safe = false (D-010).
 3. The report is valid JSON (parses) and is downloadable from the properties
    panel (server-provided per A-11).
@@ -659,8 +660,8 @@ These numbers are the frozen acceptance baseline; any deviation is a defect.
 | 6 | Deadlocks (count) | 23 (list in 5.5; not deadlock-free) | D-011 |
 | 7 | Transitions occurring | all five (t1..t5) | D-012 |
 | 8 | Transitions at L4 (live) | none (deadlocks break strong liveness) | D-012 |
-| 9 | Per-transition levels | all five L3 (each on a reachable cycle; finite graph: L2 <=> L3) | D-012, D-031 |
-| 10 | Liveness level (net, min) | L3 | D-012, D-031 |
+| 9 | Per-transition levels | all five L1 (no reachable cycle with a t-edge; DAG via decreasing potential W, D-035) | D-012, D-035 |
+| 10 | Liveness level (net, min) | L1 | D-012, D-035 |
 | 11 | Dead transitions | none | D-012 |
 | 12 | Home state / reversibility | false (µ0 not reachable from every marking) | D-013 |
 | 13 | Enabled at µ0 | t1, t2, t3, t4, t5 (all) | D-014 |

@@ -254,7 +254,7 @@ class Report:
     bounded: bool                       # all places bounded (global_k is not None)
     safe: bool                          # 1-bounded (all k_p <= 1)
     liveness: Liveness
-    deadlocks: list[Marking]
+    deadlocks: list[MarkingOrOmega]  # tree labels may contain omega (None)
     dead_transitions: list[str]
     home_state: bool
     deadlock_free: bool
@@ -289,11 +289,12 @@ def is_coverable(net: PetriNet, structure: ReachableStructure, target: Marking) 
 - Deterministic serialization: reports and query answers are JSON with sorted
   keys; `deadlocks` in lexicographic (tuple-sorted) order, `dead_transitions`
   in declared transition order (brief §7).
-- Smoke (D-010…D-013, D-031): `per_place_k` = [10, 8, 16, 29, 8, 10] over
-  p1..p6, `global_k` = 29, `safe` = False, `liveness.level` = `"L3"` (all
-  five transitions L3 — each on a reachable cycle; none L4 — the reachable
-  deadlocks break strong liveness), 23 deadlocks, `dead_transitions` = [],
-  `home_state` = False, `deadlock_free` = False.
+- Smoke (D-010…D-013, D-035): `per_place_k` = [10, 8, 16, 29, 8, 10] over
+  p1..p6, `global_k` = 29, `safe` = False, `liveness.level` = `"L1"` (all
+  five transitions L1 — each occurs, but no reachable cycle contains a
+  t-edge: the potential W = 3·p1 + 4·p2 + p3 + p4 + 3·p5 + 2·p6 strictly
+  decreases per firing, so every run ends in a deadlock), 23 deadlocks,
+  `dead_transitions` = [], `home_state` = False, `deadlock_free` = False.
 
 ## API routes
 
@@ -478,13 +479,13 @@ the request carried queries; the example shows the FR-010 fixture answers.
   "global_k": 29,
   "home_state": false,
   "liveness": {
-    "level": "L3",
+    "level": "L1",
     "transitions": {
-      "t1": {"level": "L3", "occurs": true},
-      "t2": {"level": "L3", "occurs": true},
-      "t3": {"level": "L3", "occurs": true},
-      "t4": {"level": "L3", "occurs": true},
-      "t5": {"level": "L3", "occurs": true}
+      "t1": {"level": "L1", "occurs": true},
+      "t2": {"level": "L1", "occurs": true},
+      "t3": {"level": "L1", "occurs": true},
+      "t4": {"level": "L1", "occurs": true},
+      "t5": {"level": "L1", "occurs": true}
     }
   },
   "per_place_k": {

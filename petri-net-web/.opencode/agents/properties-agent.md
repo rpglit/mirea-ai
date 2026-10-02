@@ -29,11 +29,12 @@ You implement the properties module of petri-net-web per `docs/ARCHITECTURE.md`
   is deadlock-free.
 
 ## Tests (`backend/tests/test_properties.py`)
-- Task fixture report must match D-009..D-014 + D-031: 1503 markings, per-place
+- Task fixture report must match D-009..D-014 + D-035: 1503 markings, per-place
   k [10,8,16,29,8,10], global k=29, safe=False, 23 deadlocks (exact list in
   D-011), deadlock-free=False, home state=False, dead transitions=[],
-  per-transition levels ALL L3 and net liveness level L3 (each t lies on a
-  reachable cycle; none L4 — deadlocks break strong liveness).
+  per-transition levels ALL L1 and net liveness level L1 (each t occurs, but
+  no reachable cycle contains a t-edge — the reachability graph is a DAG,
+  D-035).
 - >= 3 other nets with hand-computed expectations (unbounded counter:
   unbounded/ω, t level L4; a live loop net: L4; a net with a dead transition +
   live ones: per-transition mix, net level = min).

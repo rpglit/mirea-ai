@@ -58,10 +58,13 @@ tree with the same caveat.
 
 Worked examples:
 
-1. **Smoke net = L3 (net level).** All five transitions occur and each lies
-   on a reachable cycle (token circulation through the p1..p6 loop), so each
-   is L3; none is L4 — the 23 reachable deadlocks mean that from those
-   markings no transition can ever fire again (D-011, D-012).
+1. **Smoke net = L1 (net level).** All five transitions occur, but NO
+   reachable cycle contains any t-edge: the weighted potential
+   W = 3·p1 + 4·p2 + p3 + p4 + 3·p5 + 2·p6 strictly decreases under every
+   firing (t1: -2, t2: -3, t3: -1, t4: -2, t5: -2), so the reachability
+   graph is a DAG and every run ends in one of the 23 deadlocks (D-011,
+   D-012, D-035). Hence each transition is exactly L1 and the net level is
+   L1; none is L4 for the same deadlock reason.
 2. **Loop net = L4.** P={p1}, T={t1}, I(t1)={p1:1}, O(t1)={p1:1},
    µ0=(1,): the only reachable marking is (1,), t1 is enabled there, cycle
    present, closure covers everything → t1 is L4, net L4, deadlock-free.
@@ -72,13 +75,15 @@ Worked examples:
    an L2 value.
 4. **L0/L1 mix.** P={p1,p2}, T={t1,t2,t3}: I/O of t1: p1 -> p2; t2: p2 ->
    p1; t3: I(t3)={p1:1,p2:1}, O(t3)={p1:1}; µ0=(1,0). Only one token exists,
-   so t3 never occurs → t3 = L0; t1, t2 occur and lie on the 2-cycle → L3;
+   so t3 never occurs → t3 = L0; t1, t2 lie on the 2-cycle and, from both
+   reachable markings, each eventually becomes enabled → t1, t2 = L4;
    net level = min = L0.
 
 ## Consequences
 
 - The report carries per-transition `{occurs: bool, level: "L0"|"L1"|"L3"|"L4"}`
-  plus the net `level` (FR-009 criterion 4 fixture: all five L3, net L3).
+  plus the net `level` (FR-009 criterion 4 fixture: all five L1, net L1 —
+  D-035).
 - The properties module needs one SCC pass (shared by all transitions) plus
   one backwards closure per transition — linear in (|V|+|E|) per transition,
   negligible for the smoke net (1503/4983).

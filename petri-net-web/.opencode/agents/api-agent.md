@@ -26,7 +26,7 @@ You implement the API layer of petri-net-web per `docs/ARCHITECTURE.md`
 
 ## Tests (`backend/tests/test_api.py`)
 - Full smoke flow via TestClient: parse the task fixture (text) -> graph
-  (1503 nodes) -> properties (k=29, 23 deadlocks, liveness L3) -> fire t1 ->
+  (1503 nodes) -> properties (k=29, 23 deadlocks, liveness L1) -> fire t1 ->
   marking (5,5,2,5,4,3) -> undo -> back to µ0 -> reset semantics per contract.
 - Error paths: invalid JSON input, unknown session id, cap exceeded
   (small REACH_MAX_MARKINGS via settings override).

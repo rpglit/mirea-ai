@@ -31,11 +31,10 @@ sets and edge counts agree exactly).
 - **D-010** Boundedness: per-place maxima p1..p6 = **[10, 8, 16, 29, 8, 10]**;
   global k = **29** (net is bounded, NOT safe).
 - **D-011** Deadlocks: **23** (full list below); the net is **not** deadlock-free.
-- **D-012** Transitions: all five occur (enabled somewhere). Under the
-  classical L0–L4 scale (D-031): all five are **L3** (each lies on a
-  reachable cycle; on a finite graph L2 <=> L3), **none is L4** (strong
-  liveness is impossible — the 23 reachable deadlocks break it). Net
-  liveness level (min over transitions): **L3**.
+- **D-012** Transitions: all five occur (enabled somewhere). Classical
+  L0–L4 scale (D-031): all five are **L1** (occurs, but NO reachable cycle
+  contains any t-edge — see D-035), none is L4 (the 23 reachable deadlocks
+  break strong liveness). Net liveness level (min over transitions): **L1**.
 - **D-013** Home state / reversibility: **False** — µ0 is not reachable from every
   reachable marking.
 - **D-014** At µ0 all transitions t1..t5 are enabled; firing t1 at µ0 gives
@@ -119,10 +118,10 @@ order per D-022; the set is unchanged):
   often / L3 infinitely often in some sequence / L4 live (strong, MSU). On a
   finite reachability graph L2 <=> L3 (reachable cycle with a t-edge), so a
   computed level is never exactly L2; net level = min over transitions.
-  Corrected ground truth (recomputed, verified): smoke net — all five
-  transitions **L3**, net level **L3** (was "L1" under the old partition).
-  Updated: A-05, ADR-0004 (rewritten), REQUIREMENTS FR-009 + §5.3 + §8.1 +
-  glossary, ARCHITECTURE (Report contract + sample report), D-012.
+  Corrected ground truth: see D-035 (the first correction attempt claimed
+  "all L3" from a buggy script — superseded). Updated: A-05, ADR-0004
+  (rewritten), REQUIREMENTS FR-009 + §5.3 + §8.1 + glossary, ARCHITECTURE
+  (Report contract + sample report), D-012.
 - **D-032** Process deviation (recurring): in this session sub-agent
   dispatches for complex single files (parser.py x3, reachability KM part,
   full-module multi-file tasks) fail silently (empty result, no artifacts)
@@ -139,3 +138,18 @@ order per D-022; the set is unchanged):
   unbounded nets the tree is small because ω compresses it (counter: 1 node).
   Cap hit in coverability mode -> typed 413 `cap_exceeded`. Updated:
   ADR-0002, ARCHITECTURE reachability contract, FR-006 criterion 5.
+- **D-035** **GROUND-TRUTH CORRECTION #2 (liveness direction bug).** The
+  first L3 verification script checked `m ->* m2` (trivially true for the
+  edge itself) instead of the correct `m2 ->* m`, and reported "all L3".
+  Corrected computation (forward reachability per edge, plus the container's
+  Tarjan SCC on the built graph — all 1503 nodes singleton): **no reachable
+  cycle contains any transition**. Independent proof: the weighted potential
+  W = 3·p1 + 4·p2 + p3 + p4 + 3·p5 + 2·p6 strictly decreases under every
+  transition (t1: -2, t2: -3, t3: -1, t4: -2, t5: -2) — the reachability
+  graph is a DAG; every firing sequence is finite and ends in one of the 23
+  deadlocks. True levels: all five transitions **L1**, net level **L1**;
+  home state stays false (only µ0 reaches µ0: 1/1503). Updated: D-012,
+  FR-009 c4, §5.3 rows 8-10, FR-018 c2, ADR-0004 example 1, ARCHITECTURE
+  sample report + properties bullets, agent files (L3 -> L1). The
+  properties module code needed no change (its SCC/closure logic was
+  correct — it simply found no cycles).
