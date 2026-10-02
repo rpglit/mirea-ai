@@ -105,7 +105,6 @@ window.GraphCanvas = (function () {
           "line-color": "#888",
           "curve-style": "straight",
           "target-arrow-shape": "triangle",
-          "target-arrow-scale": "0.5",
           "label": "data(label)",
           "font-size": "6px",
           "color": "#888",

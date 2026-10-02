@@ -137,7 +137,7 @@ window.NetCanvas = (function () {
         },
       },
       {
-        selector: 'edge[data(weight) = "1"]',
+        selector: "edge[data(weight) = 1]",
         style: {
           label: "",
         },
