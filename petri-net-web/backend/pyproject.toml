@@ -22,10 +22,14 @@ dev = [
   "mypy>=1.10",
   "httpx>=0.27",
   "jsonschema>=4.21",
+  "types-jsonschema>=4.21",
 ]
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+petrinet = ["*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

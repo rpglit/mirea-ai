@@ -1,5 +1,10 @@
 # ADR-0003: JSON input schema
 
+Note (2026-10-02, D-028): the runtime source of truth is the package file
+`backend/src/petrinet/schema.json` (loaded by `petrinet/parser.py`);
+`docs/schemas/petri-net.schema.json` is the documented mirror and must be kept
+in sync (the parser-agent verifies byte-equality in a test).
+
 Status: Accepted (2026-10-02)
 
 ## Context

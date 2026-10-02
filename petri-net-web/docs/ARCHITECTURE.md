@@ -349,14 +349,14 @@ Response (201):
   "node_count": 1503,
   "structure": {
     "edges": [
-      [0, "t1", 1],
-      [0, "t2", 2],
-      [0, "t3", 3]
+      ["n0", "t1", "n1"],
+      ["n0", "t2", "n2"],
+      ["n0", "t3", "n3"]
     ],
     "nodes": [
-      [0, [7, 4, 2, 5, 4, 3]],
-      [1, [5, 5, 2, 5, 4, 3]],
-      [2, [6, 4, 4, 5, 4, 2]]
+      ["n0", [7, 4, 2, 5, 4, 3]],
+      ["n1", [5, 5, 2, 5, 4, 3]],
+      ["n2", [6, 4, 4, 5, 4, 2]]
     ]
   }
 }
@@ -364,9 +364,11 @@ Response (201):
 
 The example abbreviates `structure` to the first three nodes/edges; the real
 response carries all 1503 nodes and 4983 edges in deterministic (BFS
-discovery) order (ADR-0002). Node shape: `[id, marking-tuple]`; edge shape:
-`[src_id, transition, dst_id]`. The structure is also stored on the session
-(ADR-0005) and reused by `/properties`, `/goto`, and the CSV export.
+discovery) order (ADR-0002). Node shape: `[id, marking-tuple]` with string id
+`"n<index>"` (0-based discovery index); edge shape: `[src_id, transition,
+dst_id]` (edge identifier `"n<src>:t<n<dst>"` is internal). The structure is
+also stored on the session (ADR-0005) and reused by `/properties`, `/goto`,
+and the CSV export.
 
 **`POST /fire`** — request (fire `t1` at µ0) and response (200, D-014):
 

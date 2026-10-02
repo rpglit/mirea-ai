@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://petri-net-web.local/schemas/petri-net.schema.json",
+  "title": "Petri net input (JSON)",
+  "description": "Canonical JSON form of a Petri net S = (P, T, I, O, mu0), the single intake model shared by all three channels (raw text, JSON, form; ADR-0003). Validation is two-pass: this schema (pass 1) checks structure only. Pass 2, run by the same validator and reported in the same 422 error format, enforces the cross-field rules JSON Schema cannot express: initial_marking keys must be exactly the declared places, and inputs/outputs keys (and their inner keys) must be declared transitions (and places).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["places", "transitions", "initial_marking"],
+  "properties": {
+    "places": {
+      "description": "Declared place names P, in order (unique identifier strings).",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+      }
+    },
+    "transitions": {
+      "description": "Declared transition names T, in order (unique identifier strings).",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+      }
+    },
+    "inputs": {
+      "description": "Input arcs I: transition -> (place -> positive integer weight). Optional key — absent = empty map (all input weights 0). Pass 2 enforces that every key is a declared transition and every inner key a declared place.",
+      "$ref": "#/$defs/arc_map"
+    },
+    "outputs": {
+      "description": "Output arcs O: transition -> (place -> positive integer weight). Optional key — absent = empty map (all output weights 0). Pass 2 enforces that every key is a declared transition and every inner key a declared place.",
+      "$ref": "#/$defs/arc_map"
+    },
+    "initial_marking": {
+      "description": "Initial marking mu0: place -> non-negative integer token count. Pass 2 enforces that the keys are exactly the declared places: a missing place is a validation error (not an implicit 0) and surplus keys are errors too.",
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+      },
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    }
+  },
+  "$defs": {
+    "arc_map": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[A-Za-z_][A-Za-z0-9_]*$": {
+          "type": "object",
+          "additionalProperties": false,
+          "patternProperties": {
+            "^[A-Za-z_][A-Za-z0-9_]*$": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        }
+      }
+    }
+  }
+}
