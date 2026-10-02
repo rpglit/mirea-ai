@@ -607,6 +607,43 @@ def get_session(session_id: str) -> dict[str, object]:
     }
 
 
+@router.get("/sessions/{session_id}/graph")
+def get_stored_graph(session_id: str) -> dict[str, object]:
+    """Return the stored reachability structure without recomputing it.
+
+    Used by the UI to restore a session from history (FR-022): the response
+    has the same shape as ``POST /graph`` (minus ``capped``).
+
+    Response (200) for a built smoke session:
+
+        {
+            "edge_count": 4983,
+            "kind": "graph",
+            "node_count": 1503,
+            "structure": {"edges": [["n0", "t1", "n1"]], "nodes": [["n0", [7, 4, 2, 5, 4, 3]]]}
+        }
+
+    Errors: 404 ``unknown_session``, 422 ``validation_failed`` (not built).
+    """
+    store = get_store()
+    row = _load_session(store, session_id)
+    graph_json = row["graph_json"]
+    if graph_json is None:
+        raise ValidationError(
+            [{"path": "session", "message": "graph not built; call /graph first"}]
+        )
+    structure = structure_from_json(graph_json)
+    return {
+        "edge_count": structure.stats["edges"],
+        "kind": structure.kind,
+        "node_count": structure.stats["nodes"],
+        "structure": {
+            "edges": [list(e) for e in structure.edges],
+            "nodes": [[nid, marking_to_list(m)] for nid, m in structure.nodes],
+        },
+    }
+
+
 @router.delete("/sessions/{session_id}")
 def delete_session(session_id: str) -> Response:
     """Hard-delete a session; respond 204 with no body.

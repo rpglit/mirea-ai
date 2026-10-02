@@ -230,6 +230,23 @@ def test_session_list_and_summary(client: TestClient) -> None:
     assert summary_after["report_computed"] is True
 
 
+def test_stored_graph_endpoint(client: TestClient) -> None:
+    """GET /sessions/{id}/graph returns the stored structure; 422 before build."""
+    sid = str(_parse(client)["session_id"])
+    early = client.get(f"/sessions/{sid}/graph")
+    assert early.status_code == 422
+
+    assert client.post("/graph", json={"session_id": sid}).status_code == 200
+    stored: dict[str, object] = client.get(f"/sessions/{sid}/graph").json()
+    assert stored["kind"] == "graph"
+    assert stored["node_count"] == 1503
+    assert stored["edge_count"] == 4983
+    assert "capped" not in stored
+    structure = cast("dict[str, object]", stored["structure"])
+    nodes = cast("list[object]", structure["nodes"])
+    assert nodes[0] == ["n0", [7, 4, 2, 5, 4, 3]]
+
+
 def test_delete_session(client: TestClient) -> None:
     """DELETE removes the session; later /state is a 404 unknown_session."""
     sid = str(_parse(client)["session_id"])
