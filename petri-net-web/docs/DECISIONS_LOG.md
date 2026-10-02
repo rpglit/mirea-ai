@@ -153,3 +153,26 @@ order per D-022; the set is unchanged):
   sample report + properties bullets, agent files (L3 -> L1). The
   properties module code needed no change (its SCC/closure logic was
   correct — it simply found no cycles).
+
+## Phases 5-6 (QA + acceptance, 2026-10-02)
+
+- **D-036** Cytoscape is vendored: `frontend/vendor/cytoscape.umd.js`
+  (3.30.2), served by the app at `/vendor/cytoscape.umd.js`. The runtime CDN
+  dependency (unpkg) hung page loads in the offline e2e container; vendoring
+  removes the external dependency entirely.
+- **D-037** e2e container base: `ubuntu:24.04` + python3 venv +
+  `playwright==1.49.1` + `playwright install --with-deps chromium`. The
+  `mcr.microsoft.com/playwright/python:v1.49.1-jammy` image no longer ships
+  the python playwright package; `python:3.12-slim` (Debian) fails
+  `--with-deps` on Ubuntu-only font package names.
+- **D-038** API extension for session restore: `/parse` and
+  `GET /sessions/{id}` responses now carry `inputs`/`outputs` arc maps (the
+  net canvas needs them); `GET /sessions/{id}/graph` returns the stored
+  structure (no recomputation). +1 test.
+- **D-039** Phase 5 results: 80 unit/property tests green, ruff rc=0, mypy
+  strict clean (12 files), e2e 5/5 green (~9 s). Defects found+fixed during
+  Phase 5 are listed in docs/TEST_REPORT.md section 4.
+- **D-040** Phase 6 acceptance: the full web path (Playwright -> UI -> API ->
+  storage -> exports) produced `docs/acceptance/` artifacts; the 1503-marking
+  CSV set-equals the independent stdlib ground truth (no duplicates); the
+  report matches D-009..D-014/D-035. Verdict: ACCEPT (TEST_REPORT.md).
