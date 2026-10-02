@@ -10,7 +10,7 @@ Chronological log of all project decisions. Format: `D-NNN` (date) decision — 
   Web research: found MSU course material with the same p1..p6/t1..t5 net family and
   matching definitions (boundedness, safety, live transition) —
   `https://mk.cs.msu.ru/images/a/a5/MMSC_VP_03.pdf` (Блок 3), but no published answer
-  for this exact fixture. Ground truth therefore derived in-house (see D-008).
+  for this exact fixture. Ground truth therefore derived in-house (see D-009..D-014).
 - **D-004** Backend: FastAPI (Python 3.12) — "как будет быстрее".
 - **D-005** Frontend: vanilla JS + CDN libraries — "как будет быстрее".
 - **D-006** Graph visualization: Cytoscape.js — "как будет быстрее".

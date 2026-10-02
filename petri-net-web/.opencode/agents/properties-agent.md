@@ -22,9 +22,9 @@ You implement the properties module of petri-net-web per `docs/ARCHITECTURE.md`
   enabled at K. The L0–L4 partition per ASSUMPTIONS A-05.
 
 ## Tests (`backend/tests/test_properties.py`)
-- Task fixture report must match D-008: 1503 markings, per-place k
+- Task fixture report must match D-009..D-014: 1503 markings, per-place k
   [10,8,16,29,8,10], global k=29, safe=False, 23 deadlocks (exact list in
-  D-008), deadlock-free=False, home state=False, dead transitions=[], liveness
+  D-011), deadlock-free=False, home state=False, dead transitions=[], liveness
   level L1 (all occur, none live under the strong definition).
 - >= 3 other nets with hand-computed expectations (unbounded counter:
   unbounded/ω; a live net, e.g. a simple loop: L4; a dead net: L0).

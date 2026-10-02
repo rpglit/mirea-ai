@@ -7,7 +7,7 @@ overrides are recorded in `DECISIONS_LOG.md`.
 - **A-02** The smoke net (task fixture) has no externally published reference
   answer. Ground truth is derived in-house: two independent stdlib implementations
   (BFS with dict-based firing; DFS with incidence-vector firing) agree on the
-  reachability set. Frozen numbers: `DECISIONS_LOG.md` D-008.
+  reachability   set. Frozen numbers: `DECISIONS_LOG.md` D-009..D-014.
 - **A-03** Boundedness: place `p` is `k`-bounded iff `µ(p) <= k` for every
   reachable marking; the net is bounded iff all places are (global `k` =
   `max_p`). Unboundedness is detected via `ω`-tokens in the Karp–Miller

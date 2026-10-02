@@ -37,7 +37,7 @@ You are the requirements engineer for petri-net-web (Petri net analysis web app)
 ## Definition of Done
 - Every feature item of the task maps to >= 1 FR with >= 1 acceptance criterion.
 - The smoke net (task fixture) is included as an acceptance fixture with the
-  expected numbers from DECISIONS_LOG D-008.
+  expected numbers from DECISIONS_LOG D-009..D-014.
 - English, consistent IDs, no code.
 
 ## Rules

@@ -18,7 +18,7 @@ You implement the reachability module of petri-net-web per `docs/ARCHITECTURE.md
   CoverabilityTree` with a kind flag.
 
 ## Tests (`backend/tests/test_reachability.py`)
-- Task fixture: exactly 1503 markings and 4983 edges (DECISIONS_LOG D-008).
+- Task fixture: exactly 1503 markings and 4983 edges (DECISIONS_LOG D-009).
 - Unbounded counter (1 place, 2 transitions: t_in adds 1, t_out removes 1,
   µ0 = 1): plain reachability hits the cap; the Karp–Miller tree terminates and
   contains an ω node.

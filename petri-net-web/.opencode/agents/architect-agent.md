@@ -27,7 +27,7 @@ You are the software architect for petri-net-web.
 
 ## Inputs
 `docs/REQUIREMENTS.md`, `docs/ASSUMPTIONS.md`, `docs/DECISIONS_LOG.md`
-(ground-truth numbers D-008).
+(ground-truth numbers D-009..D-014).
 
 ## Definition of Done
 - Every FR/NFR maps to a component + contract function.
