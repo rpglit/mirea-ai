@@ -1,0 +1,24 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: petri-net-web:latest
+    container_name: petri-net-web
+    ports:
+      - "${APP_PORT:-8080}:8000"
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DB_PATH: ${DB_PATH:-/data/sessions.db}
+      REACH_MAX_MARKINGS: ${REACH_MAX_MARKINGS:-50000}
+    volumes:
+      - petri-data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  petri-data:
