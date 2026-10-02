@@ -40,12 +40,13 @@ sets and edge counts agree exactly).
 - **D-014** At µ0 all transitions t1..t5 are enabled; firing t1 at µ0 gives
   (5,5,2,5,4,3). (Anchors used by core/api tests.)
 
-Deadlock list (p1..p6 order):
-(1,0,11,18,1,0) (0,0,4,12,0,6) (0,0,12,6,0,2) (0,0,16,3,0,0) (0,0,3,7,1,7)
-(0,0,1,5,0,9) (0,0,5,2,0,7) (0,0,5,24,1,3) (0,0,7,4,1,5) (1,0,13,13,0,0)
-(0,0,6,14,1,4) (0,0,14,8,1,0) (0,0,10,11,1,2) (0,0,11,1,1,3) (0,0,6,29,0,2)
-(0,0,2,17,1,6) (0,0,7,19,0,3) (0,0,10,26,0,0) (0,0,0,0,1,10) (0,0,3,22,0,5)
-(0,0,11,16,0,1) (0,0,9,21,1,1) (0,0,8,9,0,4)
+Deadlock list (p1..p6 order, lexicographic tuple-sorted — canonical report
+order per D-022; the set is unchanged):
+(0,0,0,0,1,10) (0,0,1,5,0,9) (0,0,2,17,1,6) (0,0,3,7,1,7) (0,0,3,22,0,5)
+(0,0,4,12,0,6) (0,0,5,2,0,7) (0,0,5,24,1,3) (0,0,6,14,1,4) (0,0,6,29,0,2)
+(0,0,7,4,1,5) (0,0,7,19,0,3) (0,0,8,9,0,4) (0,0,9,21,1,1) (0,0,10,11,1,2)
+(0,0,10,26,0,0) (0,0,11,1,1,3) (0,0,11,16,0,1) (0,0,12,6,0,2) (0,0,14,8,1,0)
+(0,0,16,3,0,0) (1,0,11,18,1,0) (1,0,13,13,0,0)
 
 ## Phase 1 (bootstrap, 2026-10-02)
 
@@ -66,3 +67,32 @@ Deadlock list (p1..p6 order):
   API error (A-15); Karp–Miller mode remains available for unbounded nets.
 - **D-021** `frontend/index.html` is a bootstrap placeholder, replaced in Phase 4.5
   (A-16). No PNG endpoint server-side: PNG export is client-side (A-11).
+
+## Phase 3 (architecture, 2026-10-02)
+
+- **D-022** Canonical ordering of `deadlocks` in reports: lexicographic
+  (tuple-sorted). The D-011 list was re-emitted in this order (same 23
+  markings; the original order was an arbitrary iteration order of the
+  ground-truth script). The reviewer caught the contradiction with the
+  "discovery order" claim in ARCHITECTURE.md.
+- **D-023** `POST /graph` returns the full deterministic structure
+  (`structure.nodes = [[id, marking]...]`, `structure.edges =
+  [[src_id, transition, dst_id]...]`, ADR-0002 ids) — the UI renders from the
+  response and the structure is stored on the session (ADR-0005) and reused by
+  `/properties`, `/goto`, CSV export.
+- **D-024** Report contract gains `bounded: bool` (all places bounded; true
+  for the smoke net) — required by FR-007 c2 / FR-018 c1 / FR-020 c1.
+- **D-025** DESIGN_BRIEF fixes (brief was an orchestrator input, ADR/
+  ARCHITECTURE is authoritative): Cytoscape net-canvas edge data =
+  `{weight, source, target}`; `POST /goto` added to the brief's route table.
+  Also: `inputs`/`outputs` are NOT required in the JSON schema (absent = empty
+  maps, ADR-0003 / REQUIREMENTS §8.8) — the brief's "required" list was wrong.
+- **D-026** Process deviation: in this session large sub-agent dispatches fail
+  silently (empty result, no artifacts) while small per-file dispatches work.
+  Workaround: `docs/DESIGN_BRIEF.md` (orchestrator-pinned decisions) + one
+  deliverable per dispatch. The orchestrator applied the Phase-3 review fixes
+  (6 mandatory) directly instead of re-dispatching; ADR-0002 pseudocode walk
+  simplified; throwaway `0000-healthcheck.md` ADR removed.
+- **D-027** `jsonschema>=4.21` added to backend dev extras (image rebuilt);
+  the schema file validates against both fixtures (schema-valid: ok;
+  smoke-fixture: ok).
