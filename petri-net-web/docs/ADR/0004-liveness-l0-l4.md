@@ -1,88 +1,91 @@
-# ADR-0004: Liveness scale L0-L4
+# ADR-0004: Liveness scale L0–L4 (classical, per transition)
 
 Status: Accepted (2026-10-02)
 
-**Context**
+## Context
 
-Design brief §4 and assumption A-05 pin a five-level liveness scale (L0–L4)
-reported by `/properties` for any parsed net. The scale must separate three
-questions answered per transition: can it fire at all, can it fire from every
-reachable state, and do all transitions share each property. The strong
-"live" definition follows the MSU course material (D-003, MMSC_VP_03,
-Блок 3), under which the in-house ground truth for the smoke net was frozen
-(D-009..D-014). This ADR fixes the final wording of the definitions, the
-level partition, the classification algorithm, and worked examples that
-double as regression fixtures.
+The task requires reporting liveness as "L0–L4". The classical scale
+(Murata 1989; confirmed against Wikipedia "Petri net", Liveness section, and
+the MSU course material for the L4/"живой" definition) is per-transition:
 
-**Decision**
+- **L0 (dead)**: the transition can never fire — it is not enabled at any
+  reachable marking.
+- **L1 (potentially fireable)**: it fires in at least one firing sequence —
+  enabled at some reachable marking.
+- **L2 (arbitrarily often)**: for every k >= 1 there is a finite firing
+  sequence in which it fires at least k times.
+- **L3 (infinitely often)**: there exists an infinite firing sequence in
+  which it fires infinitely often.
+- **L4 (live)**: from every reachable marking there exists a firing sequence
+  reaching a marking where it is enabled (MSU: "любое конечное вычисление
+  можно продолжить так, чтобы этот переход сработал").
 
-Definitions (per transition `t`, over the set `R` of markings reachable from
-the initial marking µ0):
+The net is **Lk-live iff all of its transitions are Lk-live**; the reported
+net level is the minimum over transitions (order L0 < L1 < L2 < L3 < L4).
+L4-ness of the net implies deadlock-free. The earlier operational partition
+in ASSUMPTIONS A-05 (2026-10-02 morning) is superseded by this ADR (D-031).
 
-- `t` **occurs** iff `t` is enabled at some marking `M ∈ R`.
-- `t` is **live** (strong, MSU) iff for every reachable marking `M ∈ R`
-  there exists a marking `K` with `M ->* K` (a firing sequence, possibly
-  empty) and `t` enabled at `K`.
+## Decision
 
-Algorithm: for each `t`, start from `S_t = { M ∈ R : t enabled at M }` and
-compute its backwards closure along reachability edges (a marking joins the
-closure when one of its firing successors is already in it). `t` is live iff
-the backwards closure covers all of `R`. This is one pass per transition over
-the already-built graph: O(|T| · (|R| + |E|)) total, no extra construction.
+Per-transition levels are computed on the finite reachability graph as
+follows (all O((|V|+|E|)·|T|) or better with the SCC pass):
 
-Level partition for the net (over all of its transitions):
+- `occurs(t)`: t enabled at some reachable marking. L0 iff not occurs.
+- **L2 / L3 test (one and the same on a finite graph)**: t fires
+  arbitrarily often (L2) iff there exists a reachable cycle containing a
+  t-edge. Proof sketch: (=>) a reachable cycle with a t-edge looped k times
+  gives a sequence firing t k times; looping forever gives an infinite
+  sequence. (<=) if t fires arbitrarily often, some marking repeats on the
+  way, and the segment between two repeats is a reachable cycle containing a
+  t-edge. Implementation: compute the strongly-connected components (Tarjan)
+  of the reachability graph once; t passes iff some edge (m --t--> m') has
+  m and m' in the same SCC. Since every node is reachable from µ0 by
+  construction, "reachable cycle" needs no extra check. On a finite graph
+  L2 <=> L3 exactly, so the reported level is **never exactly L2**: a
+  transition passing this test is classified L3.
+- **L4 test**: backwards closure from the set of markings where t is
+  enabled (walk predecessor edges); t is L4 iff the closure covers ALL
+  reachable markings.
+- Classification: L4 if the L4 test passes; else L3 if the cycle test
+  passes; else L1 if occurs; else L0.
 
-- **L4** — all live;
-- **L3** — all occur, not all live;
-- **L2** — >=1 live AND >=1 does not occur;
-- **L1** — >=1 occurs, none live;
-- **L0** — none occur.
+For unbounded nets the levels are computed on the Karp–Miller coverability
+tree with ω-semantics (t enabled at a marking containing ω whenever the
+precondition is eventually satisfiable — ω >= any weight). This
+over-approximates, so the report carries `approximation: "omega"`
+(FR-009 criterion 5); the L2/L3 cycle test and the L4 closure run on the
+tree with the same caveat.
 
-Worked examples, each explicitly classified:
+Worked examples:
 
-1. **Smoke net** (task fixture p1..p6 / t1..t5; D-009..D-012). All five
-   transitions occur — each is enabled at some reachable marking. But the net
-   has 23 reachable deadlocks (D-011), and at a deadlock no transition is
-   enabled; for every `t` there is a reachable `M` (any deadlock) from which
-   no `K` with `t` enabled is reachable. Hence no transition is live.
-   >=1 occurs, none live → level **L1** (frozen in D-012).
-2. **Loop net**: `P = {p1}`, `T = {t1}`, `I(t1) = {p1: 1}`,
-   `O(t1) = {p1: 1}`, µ0 = (1,). `R = {(1,)}`; `t1` is enabled at (1,) and
-   fires back to (1,). For the only reachable M = (1,) take K = M: the
-   strong condition holds. `t1` is live, all live → level **L4**.
-3. **Two-place net**: `P = {p1, p2}`, `T = {t1, t2, t3}` with
-   `t1: p1 -> p2`, `t2: p2 -> p1`, and `I(t3) = {p1: 1, p2: 1}`,
-   `O(t3) = {p1: 1}`, µ0 = (1,0). `R = {(1,0), (0,1)}` — one token shuttles
-   between the places. `t1` is live: from (1,0) take K = (1,0), from (0,1)
-   take K = (1,0) via `t2`. `t2` is live by the symmetric argument. `t3`
-   needs one token on both places simultaneously, impossible while the net
-   holds exactly one token: never enabled, does not occur. >=1 live (t1, t2)
-   AND >=1 does not occur (t3) → level **L2**.
+1. **Smoke net = L3 (net level).** All five transitions occur and each lies
+   on a reachable cycle (token circulation through the p1..p6 loop), so each
+   is L3; none is L4 — the 23 reachable deadlocks mean that from those
+   markings no transition can ever fire again (D-011, D-012).
+2. **Loop net = L4.** P={p1}, T={t1}, I(t1)={p1:1}, O(t1)={p1:1},
+   µ0=(1,): the only reachable marking is (1,), t1 is enabled there, cycle
+   present, closure covers everything → t1 is L4, net L4, deadlock-free.
+3. **L2 example (never reported, but the class exists).** Any net where a
+   transition fires arbitrarily often but no infinite sequence contains it
+   infinitely often; impossible on a finite reachability graph (L2 <=> L3),
+   hence unreachable by the implementation — recorded so tests do not expect
+   an L2 value.
+4. **L0/L1 mix.** P={p1,p2}, T={t1,t2,t3}: I/O of t1: p1 -> p2; t2: p2 ->
+   p1; t3: I(t3)={p1:1,p2:1}, O(t3)={p1:1}; µ0=(1,0). Only one token exists,
+   so t3 never occurs → t3 = L0; t1, t2 occur and lie on the 2-cycle → L3;
+   net level = min = L0.
 
-Unbounded nets (ω-approximation caveat): the level is computed on the
-Karp–Miller coverability tree (brief §2) instead of the reachability graph.
-At a tree node, `t` is treated as **enabled iff every input weight is
-componentwise <= the node's value, with ω treated as dominating any natural**
-— a transition whose input place carries ω counts as enabled at that node.
-Because the coverability tree over-approximates reachability, "occurs" and
-"live" there are approximations: a transition may be judged to occur or be
-live because an ω-node covers it without any concrete reachable marking
-enabling it. Every report produced in coverability mode carries this caveat;
-for bounded nets the classification is exact.
+## Consequences
 
-**Consequences**
-
-- Classification is a pure post-pass over the stored graph: deterministic,
-  reusable by `/properties` and the JSON report export (brief §7), with no
-  additional state to persist.
-- The report stores both the net level and the per-transition occurs/live
-  flags, so the UI can show the reasoning behind the letter, not just the
-  level itself.
-- L4 implies deadlock-free; L0 means no transition can ever fire from µ0.
-  The smoke net baseline (all occur, none live → L1) and the two toy nets
-  above (L4, L2) are the mandatory test fixtures for the liveness function;
-  the D-011 deadlock list is the witness that no smoke-net transition is
-  live.
-- Cost: O(|T|) backwards closures of O(|R| + |E|) each — bounded by
-  `REACH_MAX_MARKINGS` (D-020) in bounded mode and by coverability-tree size
-  in coverability mode.
+- The report carries per-transition `{occurs: bool, level: "L0"|"L1"|"L3"|"L4"}`
+  plus the net `level` (FR-009 criterion 4 fixture: all five L3, net L3).
+- The properties module needs one SCC pass (shared by all transitions) plus
+  one backwards closure per transition — linear in (|V|+|E|) per transition,
+  negligible for the smoke net (1503/4983).
+- Tests must cover at least: smoke net L3 (all transitions), loop net L4,
+  the L0/L1-mix net (net level L0), and a net with a dead transition plus a
+  live one (per-transition mix). The "never exactly L2" rule is itself a
+  property test (hypothesis: classify a random finite graph — L2 never
+  emitted).
+- L4-implies-deadlock-free becomes a checkable invariant in the report
+  validation (FR-009 criterion 3).

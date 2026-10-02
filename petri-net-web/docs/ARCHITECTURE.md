@@ -225,8 +225,9 @@ def build(net: PetriNet, mode: Literal["auto", "bounded", "coverability"] = "aut
   it raises `CapExceededError(limit)` → 413 with
   `details.suggestion: "coverability"` (ADR-0002, NFR-002).
 - `coverability`: classical Karp–Miller with the ancestor-correction step
-  (componentwise max, ω where the child strictly exceeds); ω dominates
-  naturals; always terminates, no cap (ADR-0002).
+  (ω promotion where the candidate strictly exceeds a path node, ADR-0002);
+  ω dominates naturals; the construction always terminates, and the same `cap`
+  applies as a safety device against the bounded-net tree explosion (D-034).
 - Smoke: `build(smoke_net, "auto")` → kind `"graph"`, 1503 nodes / 4983 edges
   (D-009); the unbounded fixture (REQUIREMENTS §5.6) terminates in
   coverability mode with a single ω node.
@@ -234,14 +235,16 @@ def build(net: PetriNet, mode: Literal["auto", "bounded", "coverability"] = "aut
 ### properties (`petrinet/properties.py`)
 
 ```python
+LivenessLevel = Literal["L0", "L1", "L3", "L4"]  # classical scale (ADR-0004); L2 never emitted on a finite graph
+
 @dataclass(frozen=True)
 class TransitionLiveness:
     occurs: bool
-    live: bool
+    level: LivenessLevel      # L0 dead / L1 occurs / L3 cycle-with-t / L4 live (strong)
 
 @dataclass(frozen=True)
 class Liveness:
-    level: Literal["L0", "L1", "L2", "L3", "L4"]
+    level: LivenessLevel      # net level = min over transitions (order L0<L1<L3<L4)
     transitions: dict[str, TransitionLiveness]
 
 @dataclass(frozen=True)
@@ -273,19 +276,23 @@ def is_coverable(net: PetriNet, structure: ReachableStructure, target: Marking) 
   and `is_reachable` returns `None` there — exact reachability is undecidable
   in general, the tree answers coverability instead. `is_coverable` is
   answered from either structure, with the same caveat on the tree.
-- Liveness (ADR-0004): `occurs` = enabled at some reachable marking; `live`
-  (strong, MSU) = the backwards closure from the enablement set covers all
-  reachable markings (one pass per transition); level = matching class of the
-  partition L4 > L3 > L2 > L1 > L0 (REQUIREMENTS §8.1).
+- Liveness (ADR-0004, classical scale): `occurs` = enabled at some reachable
+  marking; per-transition `level` = L4 if the backwards closure from the
+  enablement set covers all reachable markings (strong, MSU), else L3 if some
+  reachable cycle contains a t-edge (one Tarjan SCC pass shared by all t; on
+  a finite graph L2 <=> L3 so L2 is never emitted), else L1 if occurs, else
+  L0. Net `level` = the minimum over transitions (order L0 < L1 < L3 < L4);
+  a net at L4 is deadlock-free.
 - Deadlock = reachable marking at which no transition is enabled; dead
   transition = never occurs; home state = every reachable marking can reach
   µ0; deadlock-free = empty deadlock list.
 - Deterministic serialization: reports and query answers are JSON with sorted
   keys; `deadlocks` in lexicographic (tuple-sorted) order, `dead_transitions`
   in declared transition order (brief §7).
-- Smoke (D-010…D-013): `per_place_k` = [10, 8, 16, 29, 8, 10] over
-  p1..p6, `global_k` = 29, `safe` = False, `liveness.level` = `"L1"` (all
-  five occur, none live), 23 deadlocks, `dead_transitions` = [],
+- Smoke (D-010…D-013, D-031): `per_place_k` = [10, 8, 16, 29, 8, 10] over
+  p1..p6, `global_k` = 29, `safe` = False, `liveness.level` = `"L3"` (all
+  five transitions L3 — each on a reachable cycle; none L4 — the reachable
+  deadlocks break strong liveness), 23 deadlocks, `dead_transitions` = [],
   `home_state` = False, `deadlock_free` = False.
 
 ## API routes
@@ -471,13 +478,13 @@ the request carried queries; the example shows the FR-010 fixture answers.
   "global_k": 29,
   "home_state": false,
   "liveness": {
-    "level": "L1",
+    "level": "L3",
     "transitions": {
-      "t1": {"live": false, "occurs": true},
-      "t2": {"live": false, "occurs": true},
-      "t3": {"live": false, "occurs": true},
-      "t4": {"live": false, "occurs": true},
-      "t5": {"live": false, "occurs": true}
+      "t1": {"level": "L3", "occurs": true},
+      "t2": {"level": "L3", "occurs": true},
+      "t3": {"level": "L3", "occurs": true},
+      "t4": {"level": "L3", "occurs": true},
+      "t5": {"level": "L3", "occurs": true}
     }
   },
   "per_place_k": {

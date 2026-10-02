@@ -31,10 +31,11 @@ sets and edge counts agree exactly).
 - **D-010** Boundedness: per-place maxima p1..p6 = **[10, 8, 16, 29, 8, 10]**;
   global k = **29** (net is bounded, NOT safe).
 - **D-011** Deadlocks: **23** (full list below); the net is **not** deadlock-free.
-- **D-012** Transitions: all five occur (enabled somewhere). Under the strong
-  liveness definition (MSU: for every reachable M there is K with M->*K and t
-  enabled at K) **no transition is live** — a consequence of the reachable
-  deadlocks. Liveness level (A-05 partition): **L1**.
+- **D-012** Transitions: all five occur (enabled somewhere). Under the
+  classical L0–L4 scale (D-031): all five are **L3** (each lies on a
+  reachable cycle; on a finite graph L2 <=> L3), **none is L4** (strong
+  liveness is impossible — the 23 reachable deadlocks break it). Net
+  liveness level (min over transitions): **L3**.
 - **D-013** Home state / reversibility: **False** — µ0 is not reachable from every
   reachable marking.
 - **D-014** At µ0 all transitions t1..t5 are enabled; firing t1 at µ0 gives
@@ -96,3 +97,45 @@ order per D-022; the set is unchanged):
 - **D-027** `jsonschema>=4.21` added to backend dev extras (image rebuilt);
   the schema file validates against both fixtures (schema-valid: ok;
   smoke-fixture: ok).
+
+## Phase 4 (implementation, 2026-10-02)
+
+- **D-028** Runtime JSON schema lives in the package:
+  `backend/src/petrinet/schema.json` (package data, loaded by parser.py);
+  `docs/schemas/petri-net.schema.json` is the documented mirror (byte-equal,
+  checked in the Phase-4.1 review).
+- **D-029** Form intake payload shape pinned (parse_form docstring):
+  `{places, transitions, arcs: [{source, target, weight, direction:
+  "input"|"output"}], initial_marking}`; "input" = place->transition arc,
+  "output" = transition->place; duplicate (direction, source, target) is a
+  validation error.
+- **D-030** `build(net, mode="auto", cap=50000)` — the contract gained an
+  optional `cap` keyword (default 50000); the API layer passes the configured
+  `REACH_MAX_MARKINGS`. Justified contract extension: the core module is
+  framework-free and must not read settings.
+- **D-031** **LIVENESS CORRECTION.** The classical per-transition L0–L4 scale
+  (Murata; confirmed via Wikipedia "Petri net" Liveness section) replaces the
+  earlier A-05 operational partition: L0 dead / L1 occurs / L2 arbitrarily
+  often / L3 infinitely often in some sequence / L4 live (strong, MSU). On a
+  finite reachability graph L2 <=> L3 (reachable cycle with a t-edge), so a
+  computed level is never exactly L2; net level = min over transitions.
+  Corrected ground truth (recomputed, verified): smoke net — all five
+  transitions **L3**, net level **L3** (was "L1" under the old partition).
+  Updated: A-05, ADR-0004 (rewritten), REQUIREMENTS FR-009 + §5.3 + §8.1 +
+  glossary, ARCHITECTURE (Report contract + sample report), D-012.
+- **D-032** Process deviation (recurring): in this session sub-agent
+  dispatches for complex single files (parser.py x3, reachability KM part,
+  full-module multi-file tasks) fail silently (empty result, no artifacts)
+  while small per-file dispatches succeed. Fallback: the orchestrator writes
+  the file from the pinned spec; quality gates (pytest/ruff/mypy) and the
+  reviewer-agent still run unchanged. Affected so far: `parser.py`.
+- **D-033** Node ids serialized as strings `"n<index>"` in the API
+  (contract shape); the earlier integer example in the /graph response was
+  corrected before implementation.
+- **D-034** The Karp–Miller builder honors the same cap as the graph builder
+  (safety device). Measured 2026-10-02: the coverability tree of the bounded
+  smoke net grows to 1.9M+ nodes in 20 s (path-local subsumption duplicates
+  labels across branches — exponential blow-up, a known KM pathology); for
+  unbounded nets the tree is small because ω compresses it (counter: 1 node).
+  Cap hit in coverability mode -> typed 413 `cap_exceeded`. Updated:
+  ADR-0002, ARCHITECTURE reachability contract, FR-006 criterion 5.

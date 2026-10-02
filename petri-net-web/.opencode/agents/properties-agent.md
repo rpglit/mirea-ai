@@ -11,25 +11,35 @@ You implement the properties module of petri-net-web per `docs/ARCHITECTURE.md`
 - Input: the built reachability graph (bounded) or coverability tree (unbounded,
   ω-semantics per the ADR).
 - Properties: per-place boundedness (k) and global; safety; liveness L0–L4
-  (per-transition occurs/live flags included in the report); marking
-  reachability query (is marking m reachable from µ0?); coverability query
-  (unbounded case); deadlock list; dead-transition list; reversibility/home
-  state (µ0 reachable from every reachable marking?); deadlock-free.
+  (per-transition `occurs` + `level` included in the report, net level = min);
+  marking reachability query (is marking m reachable from µ0?); coverability
+  query (unbounded case); deadlock list; dead-transition list;
+  reversibility/home state (µ0 reachable from every reachable marking?);
+  deadlock-free.
 - Deterministic JSON report: stable key order, machine-readable values plus
   evidence (e.g. the full deadlock list, per-place k).
-- Liveness definition (MSU course material, confirmed): a transition t is live
-  iff for every reachable marking M there exists a marking K, M ->* K, with t
-  enabled at K. The L0–L4 partition per ASSUMPTIONS A-05.
+- Liveness per ADR-0004 (classical scale): L0 dead = never enabled at any
+  reachable marking; L1 = enabled at some reachable marking (occurs); L3 =
+  some reachable cycle contains a t-edge (one Tarjan SCC pass shared by all
+  transitions; on a finite graph L2 <=> L3, so L2 is NEVER emitted); L4 live =
+  the backwards closure from the markings where t is enabled covers ALL
+  reachable markings (strong, MSU). Per-transition level = L4 if the closure
+  covers all, else L3 if the SCC cycle test passes, else L1 if occurs, else
+  L0. Net level = min over transitions (order L0 < L1 < L3 < L4); a net at L4
+  is deadlock-free.
 
 ## Tests (`backend/tests/test_properties.py`)
-- Task fixture report must match D-009..D-014: 1503 markings, per-place k
-  [10,8,16,29,8,10], global k=29, safe=False, 23 deadlocks (exact list in
-  D-011), deadlock-free=False, home state=False, dead transitions=[], liveness
-  level L1 (all occur, none live under the strong definition).
+- Task fixture report must match D-009..D-014 + D-031: 1503 markings, per-place
+  k [10,8,16,29,8,10], global k=29, safe=False, 23 deadlocks (exact list in
+  D-011), deadlock-free=False, home state=False, dead transitions=[],
+  per-transition levels ALL L3 and net liveness level L3 (each t lies on a
+  reachable cycle; none L4 — deadlocks break strong liveness).
 - >= 3 other nets with hand-computed expectations (unbounded counter:
-  unbounded/ω; a live net, e.g. a simple loop: L4; a dead net: L0).
+  unbounded/ω, t level L4; a live loop net: L4; a net with a dead transition +
+  live ones: per-transition mix, net level = min).
 - Hypothesis: the report is deterministic (same net, two runs -> equal JSON);
-  safety implies boundedness; L4 implies deadlock-free.
+  safety implies boundedness; L4 implies deadlock-free; the emitted
+  per-transition level is never exactly "L2".
 
 ## Definition of Done
 - `sudo docker compose run --rm app pytest` green; `ruff check` clean;

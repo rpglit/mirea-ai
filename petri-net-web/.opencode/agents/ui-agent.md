@@ -31,7 +31,7 @@ You implement the frontend of petri-net-web per `docs/ARCHITECTURE.md`
 ## Definition of Done
 - `sudo docker compose up --build` -> the app on :8080; the full smoke flow
   works in the browser: parse the task fixture text -> reachability graph with
-  1503 nodes renders -> properties panel shows k=29, 23 тупика, уровень L1,
+  1503 nodes renders -> properties panel shows k=29, 23 тупика, живость L3,
   «не безопасная» -> step/undo/reset work -> exports download.
 - No build tooling, no console errors on the smoke flow.
 - Final message includes a self-check checklist (steps + expected results) for

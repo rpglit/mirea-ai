@@ -13,18 +13,22 @@ overrides are recorded in `DECISIONS_LOG.md`.
   `max_p`). Unboundedness is detected via `ω`-tokens in the Karp–Miller
   coverability tree.
 - **A-04** Safety: the net is safe iff it is 1-bounded.
-- **A-05** Liveness scale L0–L4 (final wording in the architecture ADR).
-  Operational partition on the (finite) reachability graph. A transition `t`:
-  "occurs" iff enabled at some reachable marking; "live" iff from every
-  reachable marking there exists a firing sequence that fires `t`
-  (backwards closure from the markings where `t` is enabled).
-  - L0: no transition occurs;
-  - L1: some occur, none is live;
-  - L2: some are live, some do not occur;
-  - L3: all occur, not all live;
-  - L4: all live (implies deadlock-free).
-  For unbounded nets the level is reported on the coverability tree with the
-  documented ω-approximation caveat.
+- **A-05** Liveness: the classical per-transition scale L0–L4 (Murata;
+  confirmed against Wikipedia "Petri net", Liveness section; corrected per
+  D-031 — the earlier operational partition is void). Per transition:
+  - L0 dead — never enabled at any reachable marking;
+  - L1 potentially fireable — enabled at some reachable marking (occurs);
+  - L2 — fires arbitrarily often (some sequence fires it >= k times, for
+    every k);
+  - L3 — fires infinitely often in some infinite sequence;
+  - L4 live — from every reachable marking a firing sequence reaches a
+    marking where it is enabled (MSU strong definition).
+  On a finite reachability graph L2 <=> L3 (a reachable cycle containing a
+  t-edge), so a computed level is never exactly L2. Net level = the minimum
+  over all transitions ("the net is Lk-live iff all transitions are");
+  L4-ness of the net implies deadlock-free. For unbounded nets the level is
+  reported on the coverability tree with the documented ω-approximation
+  caveat.
 - **A-06** Marking order = declared order of `P` (task fixture: p1..p6).
 - **A-07** Raw text notation grammar is fixed by the parser per the architecture
   contract; the task fixture is the mandatory parse fixture.

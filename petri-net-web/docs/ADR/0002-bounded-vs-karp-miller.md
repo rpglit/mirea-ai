@@ -25,8 +25,13 @@ The build endpoint accepts a `mode` with three values:
   `details.suggestion: "coverability"` so the UI can offer the fallback.
 - `bounded`: same, but the cap is never silently relaxed; hitting it is always
   an error.
-- `coverability`: build the Karp–Miller coverability tree (always terminates,
-  no cap needed).
+- `coverability`: build the Karp–Miller coverability tree. The construction
+  always terminates, but the same cap is applied as a safety device (D-034):
+  the tree of a *bounded* net with a large state space can be exponentially
+  larger than the reachability graph (the path-local subsumption duplicates
+  labels across branches), while the tree of an *unbounded* net is small
+  because ω compresses it — the cap therefore does not affect any unbounded
+  net's result.
 
 Node identity: each node gets a discovery-order index (BFS for the graph,
 preorder for the tree), id = `n<index>`; its marking (tuple or ω-marking) is
@@ -38,39 +43,47 @@ runs for the same net.
 Karp–Miller expansion (pseudocode; ω = omega):
 
 ```
-expand(node):
-    m = node.marking                      # tuple over P, entries in N or {omega}
+expand(node):                      # node: the leaf being expanded; labels in N^P ∪ (N ∪ {ω})^P
+    m = node.marking
     for t in transitions (declared order):
-        if not enabled(m, t):             # enabled: m(p) >= w for all input arcs (omega >= any w)
+        if not enabled_omega(m, t):   # m(p) >= w for every input arc; ω >= any w
             continue
-        m_new = fire(m, t)                # componentwise, omega - w = omega, omega + w = omega
-        anc = node
-        while anc is not None:                    # walk up to the root
-            if anc.marking == m_new:              # already explored under this path
-                return
-            if covers(m_new, anc.marking):        # m_new(p) >= anc(p) for all p
-                merge: for each p with m_new(p) > anc(p) (or omega):
-                           anc.marking(p) = max(anc.marking(p), m_new(p))  # omega wins
-                re-apply the correction to anc's ancestors (loop continues)
-                node.marking = corrected node marking along the path  # standard KM path update
-                return
-            anc = anc.parent
-        if m_new not in node.children_by_marking:
-            add child node(m_new) under node
-        # else: already explored, skip
+        m_new = fire_omega(m, t)      # ω - w = ω, ω + w = ω, naturals normally
+        anc = node                    # walk the path INCLUDING node itself, up to the root
+        discarded = false
+        corrected = false
+        while anc is not None:
+            a = anc.marking
+            if a >= m_new:            # a covers m_new (componentwise; ω >= any int)
+                discarded = true      # m_new adds no new information
+                break
+            if m_new > a:             # m_new covers a and is strictly greater somewhere
+                for p in places:      # correction with OMEGA PROMOTION
+                    if a[p] is not ω and m_new[p] > a[p]:
+                        a[p] = ω      # unbounded on this path (not max!)
+                corrected = true
+            anc = anc.parent          # keep checking m_new against higher ancestors
+        if not discarded and not corrected:
+            add m_new as a new child of node
 ```
 
-This is the classical construction: a child that is covered by an ancestor is
-not added as a new node; instead the ancestor's marking is raised
-(componentwise max, introducing ω where the child strictly exceeds it) and the
-correction is re-checked upward.
+This is the classical construction with the two decisive rules: a candidate
+covered by any node on the path (including the expanding node itself) is
+discarded, and a candidate that strictly covers a path node promotes that
+node's strictly-smaller natural coordinates to ω (never plain max — max would
+let the unbounded counter's root label grow 1, 2, 3, ... forever and break
+termination). After a correction the walk continues with the same candidate
+against the remaining ancestors.
 
-Termination: each correction step strictly increases the multiset of coordinates
-that are ω, or — with the ω-set fixed — strictly increases a natural coordinate
-value while a higher coordinate (in a fixed well-order of coordinates) was
-already raised; the state space of "correction progress" is well-founded, so
-the construction halts on a finite tree with ≤ (|P|+1)·(cap+1)^|P| possible
-marking vectors in practice bounded far below.
+Termination: (a) every correction promotes at least one new coordinate of that
+node to ω (a coordinate that is already ω can never be "strictly exceeded"),
+so each node is corrected at most |P| times; (b) firing cannot create ω out of
+naturals, so an ω-labeled node has only finitely many ancestors with ω and its
+expansion is bounded by (a); (c) a branch of purely natural labels that
+grew without bound would eventually contain a label covered by an ancestor on
+the path (pigeonhole on the finite set of "tight" natural labels under the
+path bound), contradicting the creation rule — hence branches are finite and
+the tree terminates.
 
 Consequences for properties (FR-007..FR-014): on a coverability tree,
 ω-markings mean "arbitrarily many tokens". Boundedness: a place with an ω

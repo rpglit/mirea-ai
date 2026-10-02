@@ -14,7 +14,7 @@ You are the QA engineer for petri-net-web.
   `sudo docker compose run --rm e2e`).
   - E2E-1: paste the task fixture text -> «Проанализировать» -> reachability
     graph shows 1503 nodes (assert via the API response and/or the UI label) ->
-    properties panel shows k=29, 23 deadlocks, «не безопасная», level L1.
+    properties panel shows k=29, 23 deadlocks, «не безопасная», liveness L3.
   - E2E-2: stepping: select t1 at µ0 -> marking becomes (5,5,2,5,4,3); undo ->
     back to µ0; reset -> µ0.
   - E2E-3: exports: JSON report + CSV download; CSV has 1503 data rows with

@@ -51,8 +51,8 @@ numbers from `DECISIONS_LOG.md`, ground-truth section D-009…D-014.
 | Bounded (net) | Net is bounded iff every place is bounded; global k = max over p of k_p. |
 | Safe | Net is 1-bounded (A-04). |
 | Occurs (transition) | t occurs iff t is enabled at at least one reachable marking (A-05). |
-| Live (transition) | t is live iff from every reachable marking there exists a firing sequence reaching a marking where t is enabled (A-05, MSU strong definition). |
-| Liveness level L0–L4 | Global partition per A-05 (testable interpretation in FR-009). L4 implies deadlock-free. |
+| L0–L4 (transition) | Classical per-transition scale (A-05): L0 dead — never fires; L1 potentially fireable — fires in some firing sequence; L2 — fires arbitrarily often (in some sequence >= k times for every k); L3 — fires infinitely often in some infinite sequence; L4 live — from every reachable marking a firing sequence reaches an enabled marking (MSU strong definition). On a finite reachability graph L2 <=> L3 (a reachable cycle containing a t-edge), so a computed level is never exactly L2. |
+| Liveness level L0–L4 (net) | The net is Lk-live iff ALL of its transitions are; the net level is the minimum over transitions. L4 implies deadlock-free. |
 | Deadlock (dead marking) | Reachable marking at which no transition is enabled. |
 | Dead transition | Transition that never occurs (not enabled at any reachable marking). |
 | Home state | µ0 is the home state iff µ0 is reachable from every reachable marking. |
@@ -183,8 +183,13 @@ Acceptance criteria:
    caveat (A-05).
 4. The user can select coverability mode for any net; the UI explicitly offers
    the switch after a `REACH_MAX_MARKINGS` abort (A-15, NFR-002).
+5. The coverability build also honors `REACH_MAX_MARKINGS` as a safety cap
+   (typed 413 error): the tree of a bounded net with a large state space can
+   be exponentially larger than the reachability graph (D-034); for unbounded
+   nets the tree is small (ω compression), so the cap never changes their
+   result.
 
-Source: task item 3 (Karp–Miller part); A-03, A-12, A-15.
+Source: task item 3 (Karp–Miller part); A-03, A-12, A-15, D-034.
 
 ### FR-007 — Boundedness (per place and global)
 
@@ -214,30 +219,34 @@ Source: task item 4 (safety); A-04.
 
 ### FR-009 — Liveness (per transition and level L0–L4)
 
-The application classifies each transition (does not occur / occurs / live)
-and the net as a whole by liveness level L0–L4 using the operational
-partition on the (finite) reachability graph (A-05).
+The application classifies each transition by the classical L0–L4 scale and
+the net as a whole (net level = the minimum over transitions; "the net is
+Lk-live iff all transitions are Lk-live"), per A-05.
 
 Acceptance criteria:
 
-1. Per transition t: "does not occur" = not enabled at any reachable
-   marking; "occurs" = enabled at at least one reachable marking; "live" =
-   from every reachable marking there exists a firing sequence reaching a
-   marking where t is enabled (A-05, MSU strong definition).
-2. Global level is the matching class of the A-05 partition: L4 — all
-   transitions live; L3 — all occur, not all live; L2 — at least one live and
-   at least one does not occur; L1 — at least one occurs, none live; L0 — no
-   transition occurs. (Final wording is deferred to the architecture ADR per
-   A-05; the classification above is the testable interpretation recorded
-   here.)
-3. L4 implies deadlock-free: for any net classified L4 the deadlock list is
-   empty.
-4. Fixture: for the smoke net all five transitions occur, none is live,
-   level = L1 (D-012).
+1. Per transition t (on the finite reachability graph): L0 (dead) — never
+   enabled at any reachable marking; L1 (potentially fireable) — enabled at
+   some reachable marking; L2 — fires arbitrarily often: for every k there is
+   a finite firing sequence firing t at least k times; L3 — fires infinitely
+   often in some infinite firing sequence; L4 (live) — from every reachable
+   marking there exists a firing sequence reaching a marking where t is
+   enabled (MSU strong definition).
+2. Computation on a finite reachability graph: L2 and L3 are decided by the
+   same test — existence of a reachable cycle containing a t-edge (e.g. via
+   strongly-connected components); L4 by the backwards closure from the
+   markings where t is enabled. A computed per-transition level is therefore
+   one of L0, L1, L3, L4 (never exactly L2); L1/L2/L3/L4 imply the previous
+   ones.
+3. Net level = the minimum per-transition level (order L0 < L1 < L2 < L3 <
+   L4). A net at L4 is deadlock-free (the deadlock list is empty).
+4. Fixture: for the smoke net all five transitions are L3 (each lies on a
+   reachable cycle; none is L4 — the 23 reachable deadlocks break strong
+   liveness), so the net level = L3 (D-012, corrected per D-031).
 5. For unbounded nets the level is reported on the coverability tree with the
    ω-approximation caveat (A-05; FR-006 criterion 3).
 
-Source: task item 4 (liveness); A-05; D-012.
+Source: task item 4 (liveness); A-05; D-012; D-031.
 
 ### FR-010 — Reachability of specific markings
 
@@ -426,9 +435,9 @@ Acceptance criteria:
    deadlock list, dead transitions, home state, deadlock-free (FR-005…FR-014).
 2. Fixture: for the smoke net the report contains 1503 markings / 4983 edges
    (D-009), per-place maxima [10, 8, 16, 29, 8, 10] and global k = 29
-   (D-010), 23 deadlocks (D-011), level L1 with all transitions occurring and
-   none live (D-012), home state = false (D-013), bounded = true and
-   safe = false (D-010).
+   (D-010), 23 deadlocks (D-011), per-transition levels all L3 and net
+   liveness level L3 (D-012, D-031), home state = false (D-013), bounded =
+   true and safe = false (D-010).
 3. The report is valid JSON (parses) and is downloadable from the properties
    panel (server-provided per A-11).
 
@@ -649,12 +658,13 @@ These numbers are the frozen acceptance baseline; any deviation is a defect.
 | 5 | Safe | false | D-010 |
 | 6 | Deadlocks (count) | 23 (list in 5.5; not deadlock-free) | D-011 |
 | 7 | Transitions occurring | all five (t1..t5) | D-012 |
-| 8 | Live transitions | none (strong definition) | D-012 |
-| 9 | Liveness level | L1 | D-012 |
-| 10 | Dead transitions | none | D-012 |
-| 11 | Home state / reversibility | false (µ0 not reachable from every marking) | D-013 |
-| 12 | Enabled at µ0 | t1, t2, t3, t4, t5 (all) | D-014 |
-| 13 | Firing t1 at µ0 | (5, 5, 2, 5, 4, 3) | D-014 |
+| 8 | Transitions at L4 (live) | none (deadlocks break strong liveness) | D-012 |
+| 9 | Per-transition levels | all five L3 (each on a reachable cycle; finite graph: L2 <=> L3) | D-012, D-031 |
+| 10 | Liveness level (net, min) | L3 | D-012, D-031 |
+| 11 | Dead transitions | none | D-012 |
+| 12 | Home state / reversibility | false (µ0 not reachable from every marking) | D-013 |
+| 13 | Enabled at µ0 | t1, t2, t3, t4, t5 (all) | D-014 |
+| 14 | Firing t1 at µ0 | (5, 5, 2, 5, 4, 3) | D-014 |
 
 ### 5.4 50-node cyclic net (rendering/performance fixture)
 
@@ -759,12 +769,13 @@ These were ambiguous in the task/decisions and are fixed here as the
 testable interpretation; the architecture phase may refine wording but must
 not change the observable behavior accepted below.
 
-1. **L0–L4 decision order (FR-009 criterion 2).** A-05 lists the classes
-   without an explicit precedence for nets matching several boundaries; the
-   level is defined as the matching class with L4 > L3 > L2 > L1 > L0
-   precedence (a net with a live transition and a non-occurring one is L2;
-   a net where all occur and some are not live is L3). A-05 reserves the
-   final wording for the architecture ADR.
+1. **L0–L4 scale (FR-009).** The classical per-transition scale is used
+   (Murata; confirmed against Wikipedia "Petri net", Liveness): L0 dead,
+   L1 potentially fireable, L2 arbitrarily often, L3 infinitely often in
+   some sequence, L4 live (strong, MSU). On a finite reachability graph
+   L2 <=> L3 (reachable cycle with a t-edge), so a computed level is never
+   exactly L2; the net level is the minimum over transitions. (D-031
+   corrected the earlier operational partition.)
 2. **Dead transition (FR-012).** Defined as a transition that does not
    occur (never enabled at any reachable marking) — distinct from a
    transition that merely dies later in some run.
