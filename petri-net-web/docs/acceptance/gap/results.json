@@ -1,0 +1,435 @@
+{
+ "a": {
+  "title": "text intake + net + stepping click",
+  "steps": [
+   {
+    "step": "prefill",
+    "expected": "текстовая вкладка предзаполнена эталонной сетью",
+    "fact": "value не пусто=True, содержит µ=(7,4,2,5,4,3)=True, равно SMOKE=Y",
+    "ok": true
+   },
+   {
+    "step": "button-label",
+    "expected": "кнопка «Построить/Проанализировать»",
+    "fact": "факт: «Проанализировать»",
+    "ok": null
+   },
+   {
+    "step": "analyze",
+    "expected": "граф построен (1503 узлов)",
+    "fact": "время: 1.4 c",
+    "ok": true
+   },
+   {
+    "step": "net-places",
+    "expected": "кружки p1..p6 с числом фишек: p1 (7), p2 (4), p3 (2), p4 (5), p5 (4), p6 (3)",
+    "fact": "labels=['p1 (7)', 'p2 (4)', 'p3 (2)', 'p4 (5)', 'p5 (4)', 'p6 (3)', 't1', 't2', 't3', 't4', 't5'], shapes={'p1 (7)': 'ellipse', 'p2 (4)': 'ellipse', 'p3 (2)': 'ellipse', 'p4 (5)': 'ellipse', 'p5 (4)': 'ellipse', 'p6 (3)': 'ellipse', 't1': 'rectangle', 't2': 'rectangle', 't3': 'rectangle', 't4': 'rectangle', 't5': 'rectangle'}",
+    "ok": true
+   },
+   {
+    "step": "net-transitions",
+    "expected": "прямоугольники t1..t5",
+    "fact": "присутствуют=True, shapes={'rectangle'}, edges=15, weights>1=[2, 2, 3, 2, 2]",
+    "ok": true
+   },
+   {
+    "step": "weight-labels",
+    "expected": "подписи весов: дуги с весом > 1 показывают вес (FR-015.1), дуги с весом 1 — без подписи (намерение стиля)",
+    "fact": "вес>1 без подписи: 5/15, вес=1 с подписью «1»: 0, разные label: [''] (невалидный селектор edge[data(weight) = 1] чистит label у ВСЕХ дуг)",
+    "ok": false
+   },
+   {
+    "step": "active-list",
+    "expected": "активные переходы подсвечены (5 кнопок t1..t5)",
+    "fact": "активен список: ['t1:btn-transition', 't2:btn-transition', 't3:btn-transition', 't4:btn-transition', 't5:btn-transition']",
+    "ok": true
+   },
+   {
+    "step": "net-canvas-highlight",
+    "expected": "на канвасе сети активные переходы визуально выделены",
+    "fact": "classes/selected на канвасе: {'t1': {'classes': [], 'selected': False}, 't2': {'classes': [], 'selected': False}, 't3': {'classes': [], 'selected': False}, 't4': {'classes': [], 'selected': False}, 't5': {'classes': [], 'selected': False}} (нет отдельного стиля активных)",
+    "ok": false
+   },
+   {
+    "step": "click-t1-fires",
+    "expected": "клик по переходу t1 -> сразу срабатывание (FR-017.2), маркировка p1 (5)",
+    "fact": "после клика labels=['p1 (7)', 'p2 (4)', 'p3 (2)', 'p4 (5)', 'p5 (4)', 'p6 (3)', 't1', 't2', 't3', 't4', 't5'] (fired=False); нужен ли доп. клик «Шаг»?",
+    "ok": false
+   },
+   {
+    "step": "step-t1",
+    "expected": "после «Шаг» маркировка (5,5,2,5,4,3)",
+    "fact": "labels=['p1 (5)', 'p2 (5)', 'p3 (2)', 'p4 (5)', 'p5 (4)', 'p6 (3)', 't1', 't2', 't3', 't4', 't5']",
+    "ok": true
+   },
+   {
+    "step": "animation",
+    "expected": "анимация срабатывания",
+    "fact": "CSS transition канваса: «all» (Cytoscape canvas, без анимации)",
+    "ok": null
+   }
+  ],
+  "console_errors": [],
+  "console_warnings": [
+   "You have set a custom wheel sensitivity.  This will make your app zoom unnaturally when using mainstream mice.  You should change this value from the default only if you can guarantee that all your users will use the same hardware and OS configuration as your current machine.",
+   "The selector `edge[data(weight) = 1]`is invalid",
+   "You have set a custom wheel sensitivity.  This will make your app zoom unnaturally when using mainstream mice.  You should change this value from the default only if you can guarantee that all your users will use the same hardware and OS configuration as your current machine."
+  ],
+  "page_errors": [],
+  "screenshot": "docs/acceptance/gap/a-text-intake.png",
+  "error": null
+ },
+ "b": {
+  "title": "JSON intake comparison",
+  "steps": [
+   {
+    "step": "json-intake",
+    "expected": "JSON -> тот же результат, что и текстовый ввод (1503 узлов, те же маркировки)",
+    "fact": "graph_nodes=1503, net_labels=['p1 (7)', 'p2 (4)', 'p3 (2)', 'p4 (5)', 'p5 (4)', 'p6 (3)', 't1', 't2', 't3', 't4', 't5']",
+    "ok": true
+   },
+   {
+    "step": "props-equal",
+    "expected": "свойства совпадают со сценарием (a)",
+    "fact": "29=True, L1=True, 23=True",
+    "ok": null
+   }
+  ],
+  "console_errors": [],
+  "console_warnings": [
+   "You have set a custom wheel sensitivity.  This will make your app zoom unnaturally when using mainstream mice.  You should change this value from the default only if you can guarantee that all your users will use the same hardware and OS configuration as your current machine.",
+   "The selector `edge[data(weight) = 1]`is invalid",
+   "You have set a custom wheel sensitivity.  This will make your app zoom unnaturally when using mainstream mice.  You should change this value from the default only if you can guarantee that all your users will use the same hardware and OS configuration as your current machine."
+  ],
+  "page_errors": [],
+  "screenshot": "docs/acceptance/gap/b-json-intake.png",
+  "error": null
+ },
+ "c": {
+  "title": "form intake",
+  "steps": [
+   {
+    "step": "form-intake",
+    "expected": "форма (15 дуг + маркировка) -> та же сеть: 1503 узлов, 15 дуг, начальные labels",
+    "fact": "graph_nodes=1503, edges=15, labels=['p1 (7)', 'p2 (4)', 'p3 (2)', 'p4 (5)', 'p5 (4)', 'p6 (3)', 't1', 't2', 't3', 't4', 't5']",
+    "ok": true
+   }
+  ],
+  "console_errors": [],
+  "console_warnings": [
+   "You have set a custom wheel sensitivity.  This will make your app zoom unnaturally when using mainstream mice.  You should change this value from the default only if you can guarantee that all your users will use the same hardware and OS configuration as your current machine.",
+   "The selector `edge[data(weight) = 1]`is invalid",
+   "You have set a custom wheel sensitivity.  This will make your app zoom unnaturally when using mainstream mice.  You should change this value from the default only if you can guarantee that all your users will use the same hardware and OS configuration as your current machine."
+  ],
+  "page_errors": [],
+  "screenshot": "docs/acceptance/gap/c-form-intake.png",
+  "error": null
+ },
+ "d": {
+  "title": "stepping + history click",
+  "steps": [
+   {
+    "step": "step-t2",
+    "expected": "t2: (7,4,2,5,4,3)->(6,4,4,5,4,2)",
+    "fact": "labels=['p1 (6)', 'p2 (4)', 'p3 (4)', 'p4 (5)', 'p5 (4)', 'p6 (2)', 't1', 't2', 't3', 't4', 't5']",
+    "ok": true
+   },
+   {
+    "step": "step-t3",
+    "expected": "t3: ->(6,3,4,8,4,2)",
+    "fact": "labels=['p1 (6)', 'p2 (3)', 'p3 (4)', 'p4 (8)', 'p5 (4)', 'p6 (2)', 't1', 't2', 't3', 't4', 't5']",
+    "ok": true
+   },
+   {
+    "step": "undo",
+    "expected": "undo возвращает (6,4,4,5,4,2)",
+    "fact": "labels=['p1 (6)', 'p2 (4)', 'p3 (4)', 'p4 (5)', 'p5 (4)', 'p6 (2)', 't1', 't2', 't3', 't4', 't5']",
+    "ok": true
+   },
+   {
+    "step": "reset",
+    "expected": "reset -> µ0 и пустая история",
+    "fact": "labels=['p1 (7)', 'p2 (4)', 'p3 (2)', 'p4 (5)', 'p5 (4)', 'p6 (3)', 't1', 't2', 't3', 't4', 't5']",
+    "ok": true
+   },
+   {
+    "step": "history-list",
+    "expected": "история: 2 строки шагов",
+    "fact": "['7,4,2,5,4,3 → 5,5,2,5,4,3 (t1)', '5,5,2,5,4,3 → 4,5,4,5,4,2 (t2)']",
+    "ok": null
+   },
+   {
+    "step": "history-click",
+    "expected": "клик по шагу в истории -> возврат к этой маркировке (сценарий пользователя)",
+    "fact": "cursor=auto, после клика labels=['p1 (4)', 'p2 (5)', 'p3 (4)', 'p4 (5)', 'p5 (4)', 'p6 (2)', 't1', 't2', 't3', 't4', 't5'] (вернулось к µ0=False)",
+    "ok": false
+   }
+  ],
+  "console_errors": [],
+  "console_warnings": [
+   "You have set a custom wheel sensitivity.  This will make your app zoom unnaturally when using mainstream mice.  You should change this value from the default only if you can guarantee that all your users will use the same hardware and OS configuration as your current machine.",
+   "The selector `edge[data(weight) = 1]`is invalid",
+   "You have set a custom wheel sensitivity.  This will make your app zoom unnaturally when using mainstream mice.  You should change this value from the default only if you can guarantee that all your users will use the same hardware and OS configuration as your current machine."
+  ],
+  "page_errors": [],
+  "screenshot": "docs/acceptance/gap/d-stepping.png",
+  "error": null
+ },
+ "e": {
+  "title": "reachability graph click-to-goto",
+  "steps": [
+   {
+    "step": "graph-render",
+    "expected": "1503 узла рендерятся, страница не вешается",
+    "fact": "nodes=1503, time-to-evaluate=1 ms",
+    "ok": true
+   },
+   {
+    "step": "goto-node",
+    "expected": "клик по узлу -> смена маркировки сети ≤ 2 c (FR-016.4)",
+    "fact": "node=n1, switch_ms=376, switched=True, labels=['p1 (5)', 'p2 (5)', 'p3 (2)', 'p4 (5)', 'p5 (4)', 'p6 (3)', 't1', 't2', 't3', 't4', 't5']",
+    "ok": true
+   },
+   {
+    "step": "current-highlight",
+    "expected": "кликнутый узел подсвечен как текущий (FR-016.2): state selected + видимый стиль",
+    "fact": "classes=[], selected=True, bg_clicked=[238, 238, 255], bg_other_node=[238, 238, 255], визуально отличается=False (в стилисте graph-canvas.js нет правила :selected/current)",
+    "ok": false
+   },
+   {
+    "step": "selection-sync",
+    "expected": "выделение на канвасе следует за текущей маркировкой (после step)",
+    "fact": "selected после step=['n1'], узел текущей маркировки=n7, кликнуто было n1",
+    "ok": false
+   }
+  ],
+  "console_errors": [],
+  "console_warnings": [
+   "You have set a custom wheel sensitivity.  This will make your app zoom unnaturally when using mainstream mice.  You should change this value from the default only if you can guarantee that all your users will use the same hardware and OS configuration as your current machine.",
+   "The selector `edge[data(weight) = 1]`is invalid",
+   "You have set a custom wheel sensitivity.  This will make your app zoom unnaturally when using mainstream mice.  You should change this value from the default only if you can guarantee that all your users will use the same hardware and OS configuration as your current machine."
+  ],
+  "page_errors": [],
+  "screenshot": "docs/acceptance/gap/e-reachability-graph.png",
+  "error": null
+ },
+ "f": {
+  "title": "properties panel terminology",
+  "steps": [
+   {
+    "step": "props-labels",
+    "expected": "панель свойств: таблица свойство->значение",
+    "fact": "наименования: ['Маркировок (узлов)', 'Рёбер', 'Ограничена (bounded)', 'Глобальная k', 'Безопасна (safe)', 'Ограниченность по позициям', 'Живость (уровень сети)', 'Живость по переходам', 'Тупики (deadlocks)', 'Мёртвые переходы', 'Обратимость (home state)', 'Без тупиков (deadlock-free)']",
+    "ok": null
+   },
+   {
+    "step": "glossary-match",
+    "expected": "названия свойств совпадают с глоссарием методички §5.1 (живая/тупиковая/частичнотупиковая, k-ограниченная, безопасная, консервативная)",
+    "fact": "найдено в тексте: {'живая сеть (классификация)': True, 'тупиковая сеть (классификация)': False, 'частичнотупиковая': False, 'k-ограниченная': False, 'безопасная': True, 'консервативная': False}",
+    "ok": false
+   },
+   {
+    "step": "actual-terms",
+    "expected": "фактические термины UI",
+    "fact": "Ограничена (bounded); Глобальная k; Безопасна (safe); Ограниченность по позициям; Живость (уровень сети) L0-L4; Живость по переходам; Тупики (deadlocks); Мёртвые переходы; Обратимость (home state); Без тупиков (deadlock-free)",
+    "ok": null
+   }
+  ],
+  "console_errors": [],
+  "console_warnings": [
+   "You have set a custom wheel sensitivity.  This will make your app zoom unnaturally when using mainstream mice.  You should change this value from the default only if you can guarantee that all your users will use the same hardware and OS configuration as your current machine.",
+   "The selector `edge[data(weight) = 1]`is invalid",
+   "You have set a custom wheel sensitivity.  This will make your app zoom unnaturally when using mainstream mice.  You should change this value from the default only if you can guarantee that all your users will use the same hardware and OS configuration as your current machine."
+  ],
+  "page_errors": [],
+  "screenshot": "docs/acceptance/gap/f-properties-panel.png",
+  "error": null
+ },
+ "g": {
+  "title": "exports",
+  "steps": [
+   {
+    "step": "png-api-probe",
+    "expected": "cy.png() возвращает Promise (нужно для .then в exports.js)",
+    "fact": "typeof=string, head='data:image/png;base64,iVBORw0K' (default output в cytoscape 3.30.2 = строка data-URI, опция outputType неизвестна)",
+    "ok": false
+   },
+   {
+    "step": "export-png-net",
+    "expected": "PNG графа сети скачивается и валиден",
+    "fact": "download={'downloaded': False, 'toast': 'cy.png(...).then is not a function'}",
+    "ok": false
+   },
+   {
+    "step": "export-png-graph",
+    "expected": "PNG графа достижимости скачивается и валиден",
+    "fact": "download={'downloaded': False, 'toast': 'cy.png(...).then is not a function'}",
+    "ok": false
+   },
+   {
+    "step": "export-json",
+    "expected": "JSON отчёт валиден (1503/4983, k=29, L1, 23 тупика)",
+    "fact": "global_k=29, liveness=L1, deadlocks=23, keys=['approximation', 'bounded', 'dead_transitions', 'deadlock_free', 'deadlocks', 'global_k', 'home_state', 'liveness', 'per_place_k', 'safe', 'stats'], консервативность в отчёте=False",
+    "ok": true
+   },
+   {
+    "step": "export-csv",
+    "expected": "CSV маркировок: заголовок + 1503 строки",
+    "fact": "header=p1,p2,p3,p4,p5,p6, rows=1503, first=7,4,2,5,4,3",
+    "ok": true
+   }
+  ],
+  "console_errors": [],
+  "console_warnings": [
+   "You have set a custom wheel sensitivity.  This will make your app zoom unnaturally when using mainstream mice.  You should change this value from the default only if you can guarantee that all your users will use the same hardware and OS configuration as your current machine.",
+   "The selector `edge[data(weight) = 1]`is invalid",
+   "You have set a custom wheel sensitivity.  This will make your app zoom unnaturally when using mainstream mice.  You should change this value from the default only if you can guarantee that all your users will use the same hardware and OS configuration as your current machine."
+  ],
+  "page_errors": [],
+  "screenshot": "docs/acceptance/gap/g-exports.png",
+  "error": null
+ },
+ "h": {
+  "title": "sessions",
+  "steps": [
+   {
+    "step": "sessions-list",
+    "expected": "список сессий не пуст",
+    "fact": "сессий: 94 (в списке нет лимита; «сохранить» явно нет — сессия создаётся автоматически при анализе)",
+    "ok": null
+   },
+   {
+    "step": "save-button",
+    "expected": "явная кнопка «Сохранить»",
+    "fact": "кнопок с «сохран/save»: нет (FR-022.1: автосохранение при анализе)",
+    "ok": null
+   },
+   {
+    "step": "current-marked",
+    "expected": "текущая сессия помечена",
+    "fact": "['session-cd01375d · 08.10.2026, 10:30:37 [current]', 'session-15cb6fdd · 08.10.2026, 10:30:24', 'session-5086c6f7 · 08.10.2026, 10:30:22', 'session-13fdfaa3 · 08.10.2026, 10:30:19', 'session-2f13a254 · 08.10.2026, 10:30:16', 'session-9ac40b0b · 08.10.2026, 10:30:14', 'session-56f49ce1 · 08.10.2026, 10:30:12', 'session-3f5f7209 · 08.10.2026, 10:30:09']...",
+    "ok": null
+   },
+   {
+    "step": "restore",
+    "expected": "клик по сессии -> восстановление (1503 узлов)",
+    "fact": "graph_nodes=1503",
+    "ok": true
+   },
+   {
+    "step": "delete",
+    "expected": "удаление сессии: исчезла из списка; текущая -> вид очищен",
+    "fact": "кнопок удаления: 94, до: 94, после: 93, analysis-cleared=True",
+    "ok": true
+   }
+  ],
+  "console_errors": [],
+  "console_warnings": [
+   "You have set a custom wheel sensitivity.  This will make your app zoom unnaturally when using mainstream mice.  You should change this value from the default only if you can guarantee that all your users will use the same hardware and OS configuration as your current machine.",
+   "The selector `edge[data(weight) = 1]`is invalid",
+   "You have set a custom wheel sensitivity.  This will make your app zoom unnaturally when using mainstream mice.  You should change this value from the default only if you can guarantee that all your users will use the same hardware and OS configuration as your current machine.",
+   "You have set a custom wheel sensitivity.  This will make your app zoom unnaturally when using mainstream mice.  You should change this value from the default only if you can guarantee that all your users will use the same hardware and OS configuration as your current machine.",
+   "You have set a custom wheel sensitivity.  This will make your app zoom unnaturally when using mainstream mice.  You should change this value from the default only if you can guarantee that all your users will use the same hardware and OS configuration as your current machine.",
+   "The selector `edge[data(weight) = 1]`is invalid"
+  ],
+  "page_errors": [],
+  "screenshot": "docs/acceptance/gap/h-sessions.png",
+  "error": null
+ },
+ "i1": {
+  "title": "broken JSON",
+  "steps": [
+   {
+    "step": "broken-json",
+    "expected": "читаемая ошибка, без console-ошибок",
+    "fact": "toast=«Некорректный JSON: Expected property name or '}' in JSON at position 2 (line 1 column 3)», analysis_shown=False",
+    "ok": true
+   }
+  ],
+  "console_errors": [],
+  "console_warnings": [],
+  "page_errors": [],
+  "screenshot": "docs/acceptance/gap/i1-broken-json.png",
+  "error": null
+ },
+ "i2": {
+  "title": "malformed text",
+  "steps": [
+   {
+    "step": "bad-text",
+    "expected": "читаемая ошибка (RU), без console-ошибок",
+    "fact": "toast=«parse error at position 0: expected 'P = {...}, T = {...}'», analysis_shown=False",
+    "ok": true
+   }
+  ],
+  "console_errors": [
+   "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"
+  ],
+  "console_warnings": [],
+  "page_errors": [],
+  "screenshot": "docs/acceptance/gap/i2-bad-text.png",
+  "error": null
+ },
+ "i3": {
+  "title": "empty net",
+  "steps": [
+   {
+    "step": "empty-text",
+    "expected": "пустая сеть -> читаемая ошибка",
+    "fact": "toast=«parse error at position 0: empty description», status=«Остановлено: ошибка.», analysis_shown=False",
+    "ok": null
+   },
+   {
+    "step": "empty-form",
+    "expected": "форма без позиций -> читаемая ошибка",
+    "fact": "toast=«Укажите хотя бы одну позицию»",
+    "ok": true
+   }
+  ],
+  "console_errors": [
+   "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"
+  ],
+  "console_warnings": [],
+  "page_errors": [],
+  "screenshot": "docs/acceptance/gap/i3-empty-net.png",
+  "error": null
+ },
+ "i4": {
+  "title": "negative weight form",
+  "steps": [
+   {
+    "step": "negative-weight",
+    "expected": "отрицательный вес дуги -> читаемая ошибка валидации",
+    "fact": "toast=«», сеть построена (graph_nodes=2, edges=1, weight_дуги=1) — вес тихо заменили на 1",
+    "ok": false
+   }
+  ],
+  "console_errors": [],
+  "console_warnings": [
+   "You have set a custom wheel sensitivity.  This will make your app zoom unnaturally when using mainstream mice.  You should change this value from the default only if you can guarantee that all your users will use the same hardware and OS configuration as your current machine.",
+   "The selector `edge[data(weight) = 1]`is invalid",
+   "You have set a custom wheel sensitivity.  This will make your app zoom unnaturally when using mainstream mice.  You should change this value from the default only if you can guarantee that all your users will use the same hardware and OS configuration as your current machine."
+  ],
+  "page_errors": [],
+  "screenshot": "docs/acceptance/gap/i4-negative-weight.png",
+  "error": null
+ },
+ "i5": {
+  "title": "negative weight json",
+  "steps": [
+   {
+    "step": "negative-weight-json",
+    "expected": "отрицательный вес в JSON -> читаемая ошибка",
+    "fact": "toast=«validation failed (1 problems)», analysis_shown=False",
+    "ok": true
+   }
+  ],
+  "console_errors": [
+   "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"
+  ],
+  "console_warnings": [],
+  "page_errors": [],
+  "screenshot": "docs/acceptance/gap/i5-negative-json.png",
+  "error": null
+ }
+}
