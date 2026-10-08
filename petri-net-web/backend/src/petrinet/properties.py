@@ -1,11 +1,12 @@
-"""Property analysis over reachability structures (FR-007..FR-014)."""
+"""Property analysis over reachability structures (FR-007..FR-014, M5–M7)."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections.abc import Sequence
+from dataclasses import dataclass, replace
 from typing import Literal
 
-from petrinet.core import Marking, PetriNet
+from petrinet.core import Marking, PetriNet, fire, incidence, minimal_marking
 from petrinet.reachability import MarkingOrOmega, ReachableStructure
 
 # classical scale (ADR-0004); L2 never emitted on a finite graph
@@ -43,6 +44,9 @@ class Report:
     deadlock_free: bool
     approximation: Literal[None, "omega"]
     stats: dict[str, int]
+    conservative: dict[str, object]  # M5, always computed: per-transition in/out + constant sum
+    verdict: str | None  # M5: "живая"/"тупиковая"/"частичнотупиковая"; None for coverability
+    mu_min: list[int] | None = None  # M6: filled only by analyze(..., with_mu_min=True)
 
 
 def _level_rank(level: LivenessLevel) -> int:
@@ -133,6 +137,32 @@ def _cycle_edges(
     return on_cycle
 
 
+def _has_cycle(scc: dict[str, int], edges: list[tuple[str, str, str]]) -> bool:
+    """Whether some firing edge lies inside one strongly-connected component.
+
+    Reuses the single shared SCC pass (``_tarjan_scc``): a self-loop is an
+    in-component edge as well, so this is exactly the "the reachability graph
+    is a DAG" test of the M5 classification.
+    """
+    return any(scc[src] == scc[dst] for src, _t, dst in edges)
+
+
+def _classification(level: LivenessLevel, has_cycle: bool) -> str:
+    """The M5 three-class verdict over a reachability graph.
+
+    «живая» ⇔ net level L4 (from any reachable marking any transition can
+    fire); «тупиковая» ⇔ the graph is a DAG (no cycles — every firing chain
+    is finite, so deadlocking markings necessarily exist); «частичнотупиковая»
+    ⇔ neither (cycles exist — some transitions run forever, but not all are
+    live).
+    """
+    if level == "L4":
+        return "живая"
+    if not has_cycle:
+        return "тупиковая"
+    return "частичнотупиковая"
+
+
 def _backwards_closure(structure: ReachableStructure, start_ids: set[str]) -> set[str]:
     """All node ids that can reach any id in ``start_ids`` (BFS over reversed edges).
 
@@ -187,11 +217,13 @@ def _omega_enabled_marking(net: PetriNet, t: str, m: MarkingOrOmega) -> bool:
 def _analyze_graph(net: PetriNet, structure: ReachableStructure) -> Report:
     """Exact property set over a reachability graph (FR-007..FR-014).
 
-    Smoke anchors (D-010..D-013, D-031): per_place_k p1..p6 = 10, 8, 16, 29,
-    8, 10; global_k = 29; bounded = True; safe = False; liveness level "L3"
-    with all five transitions (occurs=True, level="L3"); deadlocks = the 23
-    lexicographically sorted markings (D-011, D-022); dead_transitions = [];
-    home_state = False; deadlock_free = False.
+    Smoke anchors (D-010..D-013, D-031, D-035): per_place_k p1..p6 = 10, 8,
+    16, 29, 8, 10; global_k = 29; bounded = True; safe = False; liveness
+    level "L1" with all five transitions (occurs=True, level="L1"); deadlocks
+    = the 23 lexicographically sorted markings (D-011, D-022);
+    dead_transitions = []; home_state = False; deadlock_free = False;
+    verdict = "тупиковая" (the graph is a DAG, D-035); conservative = False
+    (t1: in 2 / out 1).
     """
     node_ids = [nid for nid, _m in structure.nodes]
     all_ids: set[str] = set(node_ids)
@@ -249,6 +281,8 @@ def _analyze_graph(net: PetriNet, structure: ReachableStructure) -> Report:
         deadlock_free=not deadlocks,
         approximation=None,
         stats=structure.stats,
+        conservative=conservative(net, structure),
+        verdict=_classification(net_level, _has_cycle(scc, structure.edges)),
     )
 
 
@@ -325,24 +359,162 @@ def _analyze_coverability(net: PetriNet, structure: ReachableStructure) -> Repor
         deadlock_free=not deadlocks,
         approximation="omega",
         stats=structure.stats,
+        conservative=conservative(net, structure),
+        verdict=None,
     )
 
 
-def analyze(net: PetriNet, structure: ReachableStructure) -> Report:
-    """Compute the full property set over the stored structure (FR-007..FR-014).
+def conservative(net: PetriNet, structure: ReachableStructure) -> dict[str, object]:
+    """Conservativity per the handbook (M5) — both definitions at once.
+
+    ``per_transition[t]`` is ``{"in": Σw(I(t)), "out": Σw(O(t)), "equal": ...}``;
+    ``constant_sum`` is True iff the total token count is identical at every
+    node of the structure (an omega coordinate breaks the equality — the sum
+    is not a constant over the structure); ``conservative`` requires BOTH the
+    per-transition balance and the constant sum.
+
+    Example 8 (cycle p1→t1→p2→t2→p1, µ=(1,0)): both transitions balanced,
+    sum 1 at every node → conservative True. TASK-PN-09: t1 in 3 / out 2 and
+    t3 in 4 / out 2 → False. Smoke net: t1 in 2 / out 1 → False.
+    """
+    per_transition: dict[str, dict[str, object]] = {}
+    for i, t in enumerate(net.transitions):
+        w_in = sum(w for _p, w in net.inputs[i])
+        w_out = sum(w for _p, w in net.outputs[i])
+        per_transition[t] = {"in": w_in, "out": w_out, "equal": w_in == w_out}
+    sums: set[int] = set()
+    constant_sum = True
+    for _nid, m in structure.nodes:
+        total = 0
+        for value in m:
+            if value is None:
+                constant_sum = False
+                break
+            total += value
+        if not constant_sum:
+            break
+        sums.add(total)
+    constant = constant_sum and len(sums) <= 1
+    balanced = all(entry["equal"] for entry in per_transition.values())
+    return {
+        "per_transition": per_transition,
+        "constant_sum": constant,
+        "conservative": balanced and constant,
+    }
+
+
+def sequence_report(net: PetriNet, marking: Marking, sigma: Sequence[str]) -> dict[str, object]:
+    """Matrix-method trace of a firing sequence σ (M7, handbook formula (1)).
+
+    Fires σ step by step from ``marking`` (core.fire) reporting each step as
+    ``{"transition", "from", "to", "enabled"}``; the first non-executable step
+    carries ``"to": None`` and is recorded in ``failed_at`` (1-based), after
+    which the trace stops. ``v`` is v(σ) — the occurrence count of every
+    transition in declared order (0 for transitions absent from σ). When the
+    whole sequence is executable, ``mu_prime`` is ``marking + W·v(σ)`` (the
+    W = W+ − W− incidence from core.incidence) — equal to the step-by-step
+    result; otherwise it is None.
+
+    Raises ``ValueError`` for a transition not in the net or a marking whose
+    length differs from the number of places.
+
+    TASK-PN-05 (smoke net, µ=(7,4,2,5,4,3), σ=t1…t5): executable,
+    mu_prime=(5,3,4,6,3,3), v=(1,1,1,1,1). TASK-PN-17 (µ=(2,1,1),
+    σ=t1,t1,t2,t2): executable=False, failed_at=4. TASK-PN-35 (µ=(1,0,2,1),
+    σ=t1,t2,t1): executable, v=(2,1), mu_prime=(0,1,3,2).
+    """
+    if len(marking) != len(net.places):
+        raise ValueError(f"marking of length {len(marking)} for {len(net.places)} places")
+    known = set(net.transitions)
+    for t in sigma:
+        if t not in known:
+            raise ValueError(f"unknown transition '{t}'")
+    _w_minus, _w_plus, w_inc = incidence(net)
+    position = {t: i for i, t in enumerate(net.transitions)}
+    v = [0] * len(net.transitions)
+    for t in sigma:
+        v[position[t]] += 1
+    steps: list[dict[str, object]] = []
+    current: Marking = tuple(marking)
+    executable = True
+    failed_at: int | None = None
+    for step_no, t in enumerate(sigma, start=1):
+        if net.enabled(current, t):
+            nxt = fire(net, current, t)
+            steps.append({"transition": t, "from": list(current), "to": list(nxt), "enabled": True})
+            current = nxt
+        else:
+            steps.append({"transition": t, "from": list(current), "to": None, "enabled": False})
+            executable = False
+            failed_at = step_no
+            break
+    mu_prime: list[int] | None = None
+    if executable:
+        mu_prime = [
+            marking[i] + sum(w_inc[i][j] * v[j] for j in range(len(net.transitions)))
+            for i in range(len(net.places))
+        ]
+    return {
+        "steps": steps,
+        "v": v,
+        "mu_prime": mu_prime,
+        "executable": executable,
+        "failed_at": failed_at,
+    }
+
+
+def verdict(structure: ReachableStructure, report: Report) -> str | None:
+    """Handbook classification (M5) of a reachability structure.
+
+    Three mutually exclusive classes: «живая» ⇔ ``report.liveness.level`` is
+    L4 (from any reachable marking any transition can fire); «тупиковая» ⇔
+    the reachability graph is a DAG (no cycles — every firing chain is
+    finite; deadlocking markings necessarily exist); «частичнотупиковая» ⇔
+    neither (cycles exist — some transitions work forever, but not all are
+    live). The cycle test reuses the shared SCC pass over ``structure.edges``.
+
+    NOTE: «тупиковая» is NOT "deadlocks ≠ ∅" — a cyclic net without any
+    deadlocking marking (e.g. the two-component net, DECISIONS_LOG D-052) is
+    «частичнотупиковая». For a coverability structure (omega nodes) the
+    verdict is undetermined: None.
+    """
+    if structure.kind == "coverability":
+        return None
+    node_ids = [nid for nid, _m in structure.nodes]
+    scc = _tarjan_scc(node_ids, structure.edges)
+    return _classification(report.liveness.level, _has_cycle(scc, structure.edges))
+
+
+def analyze(
+    net: PetriNet,
+    structure: ReachableStructure,
+    *,
+    with_mu_min: bool = False,
+    parallel_mu_min: bool = False,
+) -> Report:
+    """Compute the full property set over the stored structure (FR-007..FR-014, M5–M7).
 
     Dispatches on ``structure.kind``: a reachability graph is answered
     exactly; the coverability tree is answered with the omega approximation
-    (ADR-0002).
+    (ADR-0002). ``conservative`` (M5) is computed for both kinds (it is
+    cheap); ``verdict`` (M5, three-class) is None on a coverability tree.
+    ``with_mu_min`` fills ``Report.mu_min`` via core.minimal_marking (M6);
+    ``parallel_mu_min`` selects the parallel variant (sum of all input
+    requirements — the worst case of every transition enabled at once).
 
-    Smoke (D-010..D-013, D-031): per_place_k p1..p6 = 10, 8, 16, 29, 8, 10,
-    global_k = 29, bounded = True, safe = False, liveness "L3" (all five
-    transitions occurs=True / level="L3"), 23 deadlocks (D-011, D-022 order),
-    dead_transitions = [], home_state = False, deadlock_free = False.
+    Smoke (D-010..D-013, D-031, D-035): per_place_k p1..p6 = 10, 8, 16, 29,
+    8, 10, global_k = 29, bounded = True, safe = False, liveness "L1" (all
+    five transitions occurs=True / level="L1"), 23 deadlocks (D-011, D-022
+    order), dead_transitions = [], home_state = False, deadlock_free = False,
+    verdict "тупиковая" (DAG), conservative False.
     """
     if structure.kind == "graph":
-        return _analyze_graph(net, structure)
-    return _analyze_coverability(net, structure)
+        report = _analyze_graph(net, structure)
+    else:
+        report = _analyze_coverability(net, structure)
+    if not with_mu_min:
+        return report
+    return replace(report, mu_min=list(minimal_marking(net, parallel=parallel_mu_min)))
 
 
 def is_reachable(
