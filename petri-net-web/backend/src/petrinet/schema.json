@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://petri-net-web.local/schemas/petri-net.schema.json",
   "title": "Petri net input (JSON)",
-  "description": "Canonical JSON form of a Petri net S = (P, T, I, O, mu0), the single intake model shared by all three channels (raw text, JSON, form; ADR-0003). Validation is two-pass: this schema (pass 1) checks structure only. Pass 2, run by the same validator and reported in the same 422 error format, enforces the cross-field rules JSON Schema cannot express: initial_marking keys must be exactly the declared places, and inputs/outputs keys (and their inner keys) must be declared transitions (and places).",
+  "description": "Canonical JSON form of a Petri net S = (P, T, I, O, mu0) with optional v2 extension fields (inhibitor arcs, transition priorities, output-arc delays, colored layer), the single intake model shared by all three channels (raw text, JSON, form; ADR-0003). Validation is two-pass: this schema (pass 1) checks structure only. Pass 2, run by the same validator and reported in the same 422 error format, enforces the cross-field rules JSON Schema cannot express: initial_marking keys must be exactly the declared places, inputs/outputs keys (and their inner keys) must be declared transitions (and places), inhibitors/priorities/delays keys must be declared transitions (and their places declared), delay pairs must be existing output arcs, and colors keys must be declared places (initial_values) or declared transitions (guards, output_exprs).",
   "type": "object",
   "additionalProperties": false,
   "required": ["places", "transitions", "initial_marking"],
@@ -46,6 +46,55 @@
         "type": "integer",
         "minimum": 0
       }
+    },
+    "inhibitors": {
+      "description": "Inhibitor arcs ⊣ (v2): transition -> list of distinct declared places. Optional key — absent = no inhibitor arcs (classical net); the inhibitor weight is always 1. Pass 2 enforces that every key is a declared transition and every list element a declared place.",
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[A-Za-z_][A-Za-z0-9_]*$": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          }
+        }
+      }
+    },
+    "priorities": {
+      "description": "Transition priorities Pr t (v2): transition -> non-negative integer. Optional key — absent = no priorities (classical net); a declared transition missing from the map gets priority 0. Pass 2 enforces that every key is a declared transition.",
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[A-Za-z_][A-Za-z0-9_]*$": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "delays": {
+      "description": "Output-arc delays τ (v2): transition -> (place -> τ, τ ≥ 1). Optional key — absent = no delays (classical net). Pass 2 enforces that every key is a declared transition, every inner key a declared place, and the pair an existing output arc t -> p.",
+      "$ref": "#/$defs/arc_map"
+    },
+    "colors": {
+      "description": "Colored layer (v2, A-21): data only, no semantics. Optional key — absent = classical net. Sub-keys are optional (absent = empty map). Pass 2 enforces that initial_values keys are declared places and guards/output_exprs keys declared transitions.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "initial_values": {
+          "description": "place -> list of initial color values (string expressions).",
+          "$ref": "#/$defs/string_list_map"
+        },
+        "guards": {
+          "description": "transition -> list of guard expressions of its input arcs (non-empty strings).",
+          "$ref": "#/$defs/string_list_map"
+        },
+        "output_exprs": {
+          "description": "transition -> list of value expressions of the tokens it places (non-empty strings).",
+          "$ref": "#/$defs/string_list_map"
+        }
+      }
     }
   },
   "$defs": {
@@ -61,6 +110,19 @@
               "type": "integer",
               "minimum": 1
             }
+          }
+        }
+      }
+    },
+    "string_list_map": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[A-Za-z_][A-Za-z0-9_]*$": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
           }
         }
       }

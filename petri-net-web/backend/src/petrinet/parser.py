@@ -18,7 +18,7 @@ from pathlib import Path
 
 import jsonschema
 
-from petrinet.core import PetriNet
+from petrinet.core import Colors, PetriNet
 from petrinet.errors import ParseError, ValidationError
 
 _NAME = r"[A-Za-z_][A-Za-z0-9_]*"
@@ -52,10 +52,14 @@ def validate_canonical(payload: dict[str, object]) -> dict[str, object]:
 
     Pass 1 runs the JSON Schema; pass 2 enforces the cross-field rules the
     schema cannot express (marking covers all places exactly, arc references
-    are declared). ALL problems are collected and raised in one
-    ``ValidationError``. Returns the normalized payload: absent ``inputs`` /
-    ``outputs`` keys and absent per-transition entries become empty maps, and
-    the marking is aligned to the declared places.
+    are declared; v2: inhibitors/priorities/delays keys are declared
+    transitions with declared places, delay pairs are existing output arcs,
+    colors keys are declared places/transitions). ALL problems are collected
+    and raised in one ``ValidationError``. Returns the normalized payload:
+    absent ``inputs`` / ``outputs`` keys and absent per-transition entries
+    become empty maps, the marking is aligned to the declared places, and the
+    present v2 fields (inhibitors, priorities, delays, colors) are passed
+    through for ``canonical_to_net``.
 
     Example:
         >>> parse_json(SMOKE_JSON)  # doctest: +SKIP
@@ -94,6 +98,60 @@ def validate_canonical(payload: dict[str, object]) -> dict[str, object]:
                         for p in entry:
                             if not isinstance(p, str) or p not in place_set:
                                 problems.append(_problem(f"{key}.{t}.{p}", "unknown place"))
+        output_pairs: set[tuple[str, str]] = set()
+        outputs_raw = payload.get("outputs")
+        if isinstance(outputs_raw, dict):
+            for t, entry in outputs_raw.items():
+                if isinstance(t, str) and isinstance(entry, dict):
+                    for p in entry:
+                        if isinstance(p, str):
+                            output_pairs.add((t, p))
+        inhibitors_raw = payload.get("inhibitors")
+        if isinstance(inhibitors_raw, dict):
+            for t, entry in inhibitors_raw.items():
+                if not isinstance(t, str) or t not in transition_set:
+                    problems.append(_problem(f"inhibitors.{t}", "unknown transition"))
+                    continue
+                if isinstance(entry, list):
+                    for p in entry:
+                        if not isinstance(p, str) or p not in place_set:
+                            problems.append(_problem(f"inhibitors.{t}.{p}", "unknown place"))
+        priorities_raw = payload.get("priorities")
+        if isinstance(priorities_raw, dict):
+            for t in priorities_raw:
+                if not isinstance(t, str) or t not in transition_set:
+                    problems.append(_problem(f"priorities.{t}", "unknown transition"))
+        delays_raw = payload.get("delays")
+        if isinstance(delays_raw, dict):
+            for t, entry in delays_raw.items():
+                if not isinstance(t, str) or t not in transition_set:
+                    problems.append(_problem(f"delays.{t}", "unknown transition"))
+                    continue
+                if isinstance(entry, dict):
+                    for p in entry:
+                        if not isinstance(p, str) or p not in place_set:
+                            problems.append(_problem(f"delays.{t}.{p}", "unknown place"))
+                        elif (t, p) not in output_pairs:
+                            problems.append(
+                                _problem(
+                                    f"delays.{t}.{p}", f"no output arc from '{t}' to '{p}'"
+                                )
+                            )
+        colors_raw = payload.get("colors")
+        if isinstance(colors_raw, dict):
+            initial_values_raw = colors_raw.get("initial_values")
+            if isinstance(initial_values_raw, dict):
+                for p in initial_values_raw:
+                    if not isinstance(p, str) or p not in place_set:
+                        problems.append(
+                            _problem(f"colors.initial_values.{p}", "unknown place")
+                        )
+            for key in ("guards", "output_exprs"):
+                entry = colors_raw.get(key)
+                if isinstance(entry, dict):
+                    for t in entry:
+                        if not isinstance(t, str) or t not in transition_set:
+                            problems.append(_problem(f"colors.{key}.{t}", "unknown transition"))
 
     if problems:
         raise ValidationError(problems)
@@ -123,20 +181,27 @@ def validate_canonical(payload: dict[str, object]) -> dict[str, object]:
         value = marking.get(p) if isinstance(marking, dict) else None
         normalized_marking[p] = value if isinstance(value, int) else 0
 
-    return {
+    normalized: dict[str, object] = {
         "places": places_list,
         "transitions": transitions_list,
         "inputs": {t: inputs.get(t, {}) for t in transitions_list},
         "outputs": {t: outputs.get(t, {}) for t in transitions_list},
         "initial_marking": normalized_marking,
     }
+    for key in ("inhibitors", "priorities", "delays", "colors"):
+        value = payload.get(key)
+        if isinstance(value, dict):
+            normalized[key] = value
+    return normalized
 
 
 def canonical_to_net(payload: dict[str, object]) -> PetriNet:
     """Convert a validated canonical description to the frozen PetriNet model.
 
     Arcs of each transition are sorted by the declared place index, so the
-    result is deterministic regardless of JSON key order.
+    result is deterministic regardless of JSON key order. The optional v2
+    fields (inhibitors, priorities, delays, colors) become the aligned core
+    tuples when present, ``None`` otherwise (classical net).
 
     Example (smoke net, REQUIREMENTS 5.2):
         >>> net = canonical_to_net(validate_canonical(SMOKE_JSON))  # doctest: +SKIP
@@ -179,12 +244,68 @@ def canonical_to_net(payload: dict[str, object]) -> PetriNet:
             )
         marking.append(value)
 
+    def inhibitor_places(raw: dict[object, object], t: str) -> tuple[str, ...]:
+        entry = raw.get(t)
+        if not isinstance(entry, list):
+            return ()
+        names = [str(p) for p in entry if isinstance(p, str)]
+        return tuple(sorted(names, key=lambda p: place_index[p]))
+
+    inhibitors: tuple[tuple[str, ...], ...] | None = None
+    inhibitors_raw = payload.get("inhibitors")
+    if isinstance(inhibitors_raw, dict) and inhibitors_raw:
+        inhibitors = tuple(inhibitor_places(inhibitors_raw, t) for t in transitions)
+
+    priorities: tuple[int, ...] | None = None
+    priorities_raw = payload.get("priorities")
+    if isinstance(priorities_raw, dict) and priorities_raw:
+        values: list[int] = []
+        for t in transitions:
+            value = priorities_raw.get(t)
+            values.append(value if isinstance(value, int) and not isinstance(value, bool) else 0)
+        priorities = tuple(values)
+
+    def delay_pairs(raw: dict[object, object], t: str) -> tuple[tuple[str, int], ...]:
+        entry = raw.get(t)
+        pairs: list[tuple[str, int]] = []
+        if isinstance(entry, dict):
+            for p, tau in entry.items():
+                if isinstance(p, str) and isinstance(tau, int) and not isinstance(tau, bool):
+                    pairs.append((p, tau))
+        return tuple(sorted(pairs, key=lambda pt: place_index[pt[0]]))
+
+    delays: tuple[tuple[tuple[str, int], ...], ...] | None = None
+    delays_raw = payload.get("delays")
+    if isinstance(delays_raw, dict) and delays_raw:
+        delays = tuple(delay_pairs(delays_raw, t) for t in transitions)
+
+    colors: Colors | None = None
+    colors_raw = payload.get("colors")
+    if isinstance(colors_raw, dict) and colors_raw:
+        def string_list_map(raw: object) -> dict[str, list[str]]:
+            result: dict[str, list[str]] = {}
+            if isinstance(raw, dict):
+                for key, value in raw.items():
+                    if isinstance(key, str) and isinstance(value, list):
+                        result[key] = [str(v) for v in value if isinstance(v, str)]
+            return result
+
+        colors = Colors(
+            initial_values=string_list_map(colors_raw.get("initial_values")),
+            guards=string_list_map(colors_raw.get("guards")),
+            output_exprs=string_list_map(colors_raw.get("output_exprs")),
+        )
+
     return PetriNet(
         places=tuple(places),
         transitions=tuple(transitions),
         inputs=tuple(arcs_of(inputs_raw, t) for t in transitions),
         outputs=tuple(arcs_of(outputs_raw, t) for t in transitions),
         initial_marking=tuple(marking),
+        inhibitors=inhibitors,
+        priorities=priorities,
+        delays=delays,
+        colors=colors,
     )
 
 
@@ -212,13 +333,21 @@ def parse_form(payload: dict[str, object]) -> PetriNet:
           "transitions": ["t1"],
           "arcs": [
             {"source": "p1", "target": "t1", "weight": 2, "direction": "input"},
-            {"source": "t1", "target": "p2", "weight": 1, "direction": "output"}
+            {"source": "t1", "target": "p2", "weight": 1, "direction": "output"},
+            {"source": "p2", "target": "t1", "direction": "inhibitor"}
           ],
+          "priorities": {"t1": 1},
+          "delays": {"t1": {"p2": 2}},
           "initial_marking": {"p1": 0, "p2": 0}
         }
 
     ``direction`` "input": source is a place, target a transition; "output":
-    source a transition, target a place. Duplicate arcs are validation errors.
+    source a transition, target a place; "inhibitor": source a place, target a
+    transition, weight fixed to 1 (absent or 1 accepted, anything else
+    rejected). Duplicate arcs of the same kind are validation errors; an
+    inhibitor arc and a regular arc between the same names are different
+    kinds and allowed. ``priorities`` and ``delays`` follow the JSON channel
+    shape and go through the shared two-pass validator.
 
     Raises:
         ValidationError: bad arc entries, duplicates, or shared-validator
@@ -227,6 +356,7 @@ def parse_form(payload: dict[str, object]) -> PetriNet:
     problems: list[dict[str, str]] = []
     inputs: dict[str, dict[str, int]] = {}
     outputs: dict[str, dict[str, int]] = {}
+    inhibitors: dict[str, list[str]] = {}
     seen: set[tuple[str, str, str]] = set()
 
     arcs = payload.get("arcs")
@@ -247,14 +377,29 @@ def parse_form(payload: dict[str, object]) -> PetriNet:
         if not isinstance(target, str):
             problems.append(_problem(f"arcs.{i}.target", "target must be a name string"))
             continue
+        if not isinstance(direction, str) or direction not in ("input", "output", "inhibitor"):
+            problems.append(
+                _problem(
+                    f"arcs.{i}.direction", "direction must be 'input', 'output' or 'inhibitor'"
+                )
+            )
+            continue
+        if direction == "inhibitor":
+            if weight is not None and (
+                not isinstance(weight, int) or isinstance(weight, bool) or weight != 1
+            ):
+                problems.append(_problem(f"arcs.{i}.weight", "inhibitor arc weight must be 1"))
+                continue
+            key = ("inhibitor", source, target)
+            if key in seen:
+                problems.append(_problem(f"arcs.{i}", f"duplicate arc {source}->{target}"))
+                continue
+            seen.add(key)
+            inhibitors.setdefault(target, []).append(source)
+            continue
         if not isinstance(weight, int) or isinstance(weight, bool) or weight < 1:
             problems.append(
                 _problem(f"arcs.{i}.weight", "weight must be a positive integer")
-            )
-            continue
-        if not isinstance(direction, str) or direction not in ("input", "output"):
-            problems.append(
-                _problem(f"arcs.{i}.direction", "direction must be 'input' or 'output'")
             )
             continue
         key = (direction, source, target)
@@ -277,6 +422,12 @@ def parse_form(payload: dict[str, object]) -> PetriNet:
         "outputs": outputs,
         "initial_marking": payload.get("initial_marking", {}),
     }
+    if inhibitors:
+        canonical["inhibitors"] = inhibitors
+    for v2_field in ("priorities", "delays"):
+        value = payload.get(v2_field)
+        if isinstance(value, dict) and value:
+            canonical[v2_field] = value
     return canonical_to_net(validate_canonical(canonical))
 
 
