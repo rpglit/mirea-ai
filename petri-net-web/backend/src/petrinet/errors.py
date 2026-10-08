@@ -81,6 +81,29 @@ class ConflictError(PetriNetError):
         return f"конфликт: переходы {names} имеют общую входную позицию '{self.place}'"
 
 
+class UnsupportedModelError(PetriNetError):
+    """The net model is not supported by this analysis (delays / colors).
+
+    Example: UnsupportedModelError('delays').
+    """
+
+    feature: str
+
+    def __init__(self, feature: str) -> None:
+        self.feature = feature
+
+    def __str__(self) -> str:
+        if self.feature == "delays":
+            return (
+                "граф достижимости не поддерживается для временных сетей "
+                "(задержки τ) — используйте пошаговую симуляцию решателя"
+            )
+        return (
+            "граф достижимости не поддерживается для цветных сетей — "
+            "используйте пошаговую симуляцию решателя"
+        )
+
+
 class TransitionNotEnabledError(PetriNetError):
     """Not enabled at marking. Example: TransitionNotEnabledError((1, 0), 't4')."""
 

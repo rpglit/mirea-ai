@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from petrinet.core import Marking, PetriNet
-from petrinet.errors import CapExceededError
+from petrinet.errors import CapExceededError, UnsupportedModelError
 
 OmegaMarking = tuple[int | None, ...]  # None = omega (unbounded place)
 MarkingOrOmega = Marking | OmegaMarking  # concrete marking or omega-annotated
@@ -173,6 +173,12 @@ def _build_coverability(net: PetriNet, cap: int) -> ReachableStructure:
             out_arcs = net.outputs[ti]
             if not _omega_enabled(p_index, in_arcs, m):
                 continue
+            if net.inhibitors is not None and any(
+                m[p_index[p]] != 0 for p in net.inhibitors[ti]
+            ):
+                # omega (None) or a natural > 0 in an inhibitor place blocks
+                # the transition forever in the coverability tree.
+                continue
             m2 = _omega_fire(p_index, in_arcs, out_arcs, m)
             j: int | None = base
             discarded = False
@@ -224,11 +230,23 @@ def build(
       larger than the reachability graph (D-034), while the tree of an
       unbounded net is small because omega compresses it.
 
+    Model v2 (ADR-0009): BFS honours inhibitor arcs through ``core.enabled``;
+    priorities do not change the set of reachable markings (expansion uses
+    ``enabled``, not the priority-filtered ``active``). Karp-Miller: an omega
+    (or any natural > 0) token in an inhibitor place blocks the transition
+    forever. Nets with ``delays`` or ``colors`` raise ``UnsupportedModelError``
+    (422): the state space is marking x time/values and not finite (ARCH
+    section 2.3).
+
     Smoke (D-009): ``build(smoke_net(), "auto")`` -> kind ``"graph"``,
     ``stats`` ``{"nodes": 1503, "edges": 4983}``. The unbounded counter net
     (REQUIREMENTS 5.6) with ``mode="coverability"`` terminates with a single
     omega node.
     """
+    if net.delays is not None:
+        raise UnsupportedModelError("delays")
+    if net.colors is not None:
+        raise UnsupportedModelError("colors")
     if mode in ("auto", "bounded"):
         return _build_graph(net, cap)
     return _build_coverability(net, cap)
