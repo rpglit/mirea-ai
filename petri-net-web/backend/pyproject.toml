@@ -12,6 +12,7 @@ dependencies = [
   "uvicorn[standard]>=0.30",
   "pydantic>=2.7",
   "pydantic-settings>=2.3",
+  "sympy>=1.13",
 ]
 
 [project.optional-dependencies]
@@ -47,3 +48,11 @@ strict = true
 python_version = "3.12"
 mypy_path = "src"
 packages = ["petrinet"]
+
+[[tool.mypy.overrides]]
+module = ["sympy", "sympy.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "petrinet.solvers.links"
+disable_error_code = ["no-untyped-call", "import-untyped", "call-overload"]

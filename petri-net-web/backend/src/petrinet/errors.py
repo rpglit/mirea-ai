@@ -81,6 +81,18 @@ class ConflictError(PetriNetError):
         return f"конфликт: переходы {names} имеют общую входную позицию '{self.place}'"
 
 
+class UnknownTaskError(PetriNetError):
+    """Solver task id not found in the catalog. Example: UnknownTaskError('TASK-XX-01')."""
+
+    task_id: str
+
+    def __init__(self, task_id: str) -> None:
+        self.task_id = task_id
+
+    def __str__(self) -> str:
+        return f"неизвестное задание: {self.task_id} (нет в каталоге решателей)"
+
+
 class UnsupportedModelError(PetriNetError):
     """The net model is not supported by this analysis (delays / colors).
 
@@ -116,3 +128,16 @@ class TransitionNotEnabledError(PetriNetError):
 
     def __str__(self) -> str:
         return f"transition '{self.transition}' is not enabled at marking {self.marking}"
+
+
+class SolverError(PetriNetError):
+    """A solver failed (e.g. sympy could not find the answer). Example:
+    SolverError('линейная система несовместна')."""
+
+    message: str
+
+    def __init__(self, message: str) -> None:
+        self.message = message
+
+    def __str__(self) -> str:
+        return f"ошибка решателя: {self.message}"
