@@ -1,99 +1,136 @@
-# Test Report — petri-net-web
+# Отчёт о тестировании — petri-net-web (раунд 2)
 
-|            |                                                                              |
-| ---------- | ---------------------------------------------------------------------------- |
-| Status     | v1.0 (Phase 5, QA — results)                                                 |
-| Date       | 2026-10-02 (all runs)                                                        |
-| Verdict    | **ACCEPT** — all exit criteria of `docs/TEST_PLAN.md` satisfied, no open defects |
-| Sources    | `docs/TEST_PLAN.md`, `docs/DECISIONS_LOG.md` (D-009…D-014, D-031, D-034, D-035) |
+|              |                                                                    |
+| ------------ | ------------------------------------------------------------------ |
+| Статус       | v2.0 (раунд 2, фаза 5) — **PROCEED: приёмка**                     |
+| Дата         | 2026-10-08                                                         |
+| План         | `docs/TEST_PLAN.md` v2.0                                           |
+| Гейты        | `app pytest` / `ruff check src tests` / `mypy` / `e2e` — в контейнерах |
 
-## 1. Environment
+## 1. Итог
 
-- Host: Ubuntu 24.04 VM; Docker 29.1.3 + compose 2.40.3.
-- All commands run from the project directory `/home/ipetrichenko/mirea-ai/petri-net-web` with `sudo docker compose ...` (Docker group not set, D-017); nothing installed on the host (NFR-005).
+| Гейт | Результат | Детали |
+| ---- | --------- | ------ |
+| Юнит + property | **264 passed** (0 failed) | 18 файлов; длительность ~18–30 с |
+| ruff | **All checks passed** | `src tests` |
+| mypy (strict) | **no issues found in 21 source files** | |
+| E2E | **8 passed** (0 failed) | ~24 с; console чистый во всех сценариях (NFR-107) |
+| Сборка | OK | node:20-alpine (vite build) + python:3.12-slim |
 
-| Service | Image | Notes |
-| ------- | ----- | ----- |
-| `app`   | built on `python:3.12-slim` | SQLite on `petri-data` volume; healthcheck on `/healthz` |
-| `e2e`   | `ubuntu:24.04` + venv + `playwright==1.49.1` + headless Chromium (`install --with-deps`) | `BASE_URL=http://app:8000`; waits for the app healthcheck |
+Дефектов на момент отчёта нет. Единственные находки фазы — 2 ошибочных эталона
+документации (не кода), исправлены в D-056.
 
-Commands used (the only ones quoted in this report):
+## 2. Распределение юнит-тестов (264)
 
-| Gate | Command |
-| ---- | ------- |
-| Build images | `sudo docker compose build` |
-| Unit + property suite | `sudo docker compose run --rm app pytest` |
-| Lint (ruff) | `sudo docker compose run --rm app ruff check src tests` |
-| Types (mypy strict) | `sudo docker compose run --rm app mypy` |
-| E2E suite | `sudo docker compose run --rm e2e` (app healthy) |
+| Блок | Файлы | Тестов |
+| ---- | ----- | ------ |
+| Решатели PN (40 задач каталога + эталоны §8) | `test_solvers_pn.py` | 29 |
+| Решатели ЛСС (23 задачи: ОДУ/импульс/Φ(s)/АЧХ/звенья/состояния) | `test_solvers_lss.py` | 25 |
+| Core v2 (ингибиторы, приоритеты, usable-вектор) | `test_core_v2.py` | 25 |
+| Парсер v2 (JSON/форма: inhibitors/priorities/delays/colors) | `test_parser_v2.py` | 22 |
+| Решатели FA (8 задач: normalize/simulate/compare/to_mealy, такты) | `test_solvers_fa.py` | 21 |
+| API решателей (/solve, /catalog+prefill, /matrices, /minimal-marking, /properties+, /sessions limit, /parse v2, ошибки) | `test_api_solvers.py` | 18 |
+| Решатели PN расширенные (приоритеты/временные/ингибиторы/цветные) | `test_solvers_pn_ext.py` | 16 |
+| Свойства v2 (conservative, вердикт, sequence, µmin) | `test_properties_v2.py` | 15 |
+| API раунда 1 (все маршруты, экспорт, ошибки) | `test_api.py` | 15 |
+| Reachability (1503/4983, Кэрп–Миллер, cap) | `test_reachability.py` | 11 |
+| Свойства (якоря D-009…D-035, L-шкала) | `test_properties.py` | 11 |
+| Парсер JSON/форма | `test_parser_json_form.py` | 11 |
+| Core (семантика, A-06) | `test_core.py` | 10 |
+| Парсер текст (round-trip) | `test_parser_text.py` | 9 |
+| Reachability v2 (ингибиторы/ω/приоритеты) | `test_reachability_v2.py` | 7 |
+| Каталог/роутинг/кэш/константы (+JSON-сериализация всех 71) | `test_solvers_init.py` | 6 |
+| Дымовой | `test_smoke.py` | 2 |
 
-## 2. Results matrix
+**Покрытие каталога:** все 71 задача (PN 40 / LSS 23 / FA 8) покрыты
+детерминированными тестами по эталонам MATERIALS_ANALYSIS §8, плюс negative-
+тесты на неизвестные id (`TASK-PN-99`, `TASK-LSS-99`, `TASK-XX-01`).
 
-| Layer | Command | Result |
-| ----- | ------- | ------ |
-| unit + property | `sudo docker compose run --rm app pytest` | **80 passed, 0 failed, 0 skipped** (~17 s) |
-| lint | `sudo docker compose run --rm app ruff check src tests` | **All checks passed** (rc=0) |
-| types | `sudo docker compose run --rm app mypy` (strict, 12 source files) | **Success: no issues found** |
-| e2e | `sudo docker compose run --rm e2e` | **5 passed (E2E-1…E2E-5), 0 failed** (~9 s) |
-| acceptance cross-check | independent stdlib BFS vs web-path export | **set-equality true, no duplicates**; report values match frozen ground truth (D-009…D-014, D-035) |
+## 3. Случайные объекты (hypothesis)
 
-The cross-check took the 1503-marking CSV produced through the full web path
-(Playwright → UI → API → storage → `/export/markings`) and compared the marking
-set to one computed by an independent stdlib implementation (BFS, separate code
-path): identical sets, no duplicates. The exported property report matches the
-frozen ground truth: 1503/4983 (D-009), global k = 29 (D-010), exactly 23
-deadlocks (D-011), per-transition and net level L1 (D-031, D-035), home state
-false (D-013), t1 at µ0 → (5, 5, 2, 5, 4, 3) (D-014).
+24 property-теста × 10–40 примеров (в `test_core*.py`, `test_parser_text.py`,
+`test_reachability*.py`, `test_properties*.py`) — **> 20 случайных объектов** на
+каждый инвариант:
 
-## 3. E2E scenario results
+- баланс срабатываний: µ′ = µ − I(t) + O(t) vs независимый пересчёт по дугам;
+- граф: все рёбра легальны, все узлы достижимы из µ0, порядок BFS;
+- отчёт vs независимая проверка: вердикт = (L4-проверка) / (DAG-проверка) /
+  иначе (случайные ограниченные сети); conservative = (суммы дуг на каждом t +
+  постоянство сумм меток по узлам);
+- импликации: safe ⇒ bounded, L4 ⇒ deadlock-free, tупики ⇔ узлы без активных;
+- детерминизм: одна сеть → одинаковый отчёт дважды;
+- текстовый парсер: канонический текст сети ре-парсится в ту же сеть.
 
-| Scenario | What ran | Result |
-| -------- | -------- | ------ |
-| E2E-1 text intake | pre-filled smoke text → «Проанализировать» → stats «узлов: 1503, рёбер: 4983»; `#canvas-graph` exactly 1503 nodes rendered; `#canvas-net` 11 nodes (6 places + 5 transitions); properties k = 29, «Безопасна» = нет, level L1, 23 deadlocks; screenshot saved | PASS |
-| E2E-2 stepping | at µ0 (p1 (7) / p2 (4)) select t1 + «Шаг» → labels p1 (5) / p2 (5) (marking (5,5,2,5,4,3)); «Отмена» → p1 (7) / p2 (4); «Сброс» → history list empty | PASS |
-| E2E-3 exports | CSV: header exactly `p1,p2,p3,p4,p5,p6`, 1504 lines (1 header + 1503 rows), first data row `7,4,2,5,4,3`, no "omega" anywhere; JSON: `global_k` = 29, `liveness.level` = "L1", `deadlocks` = 23 entries | PASS |
-| E2E-4 JSON intake | smoke JSON (REQUIREMENTS 5.2) pasted → same frozen numbers: 1503/4983, k = 29, 23 deadlocks, level L1 | PASS |
-| E2E-5 session history | created session listed in «История сессий»; click → analysis restored without re-entry: `#graph-stats` shows 1503 nodes again, k = 29 | PASS |
+## 4. Производительность (NFR-101, NFR-102)
 
-## 4. Defects found and fixed during Phase 5
+| Замер | Бюджет | Факт |
+| ----- | ------ | ---- |
+| Разбор + граф + свойства эталонной сети (in-process) | ≤ 10 с | **0.04 с** (parse 0.00 / graph 0.04 / properties 0.01) |
+| Полный e2e-сценарий (браузер + сеть, 1503 узла) | — | ~3 с на сценарий |
+| Любой отчёт `/solve` (71 задача, in-process) | ≤ 10 с | все 71 за **3.2 с** суммарно; худший — TASK-LSS-10: **0.80 с** |
+| Таймаут решателя | 30 с → 500 `solver_failed` | реализован (SIGALRM на главном потоке) |
 
-All were test/infrastructure defects; no product-logic defect was found (the
-properties module's SCC/closure logic was correct per D-035).
+## 5. E2E (8 сценариев, `e2e/test_e2e.py`)
 
-| # | Defect (cause) | Fix | Where verified |
-| - | -------------- | --- | -------------- |
-| 1 | Playwright 1.49.1: `wait_for_function` arg/timeout are keyword-only → `TypeError` on positional calls | keyword args in `e2e/conftest.py` | e2e suite green |
-| 2 | Runtime CDN dependency (unpkg Cytoscape) hung page load in the offline e2e container | Cytoscape vendored to `frontend/vendor/cytoscape.umd.js`, served by the app; `index.html` now references `/vendor/` | E2E-1 render; suite green |
-| 3 | `mcr.microsoft.com/playwright/python:v1.49.1-jammy` lacks the python playwright module, and on a `python:3.12-slim` base `install --with-deps` fails on a Debian/Ubuntu package-name mismatch | e2e base switched to `ubuntu:24.04` + venv + `playwright==1.49.1` + `install --with-deps chromium` | `sudo docker compose build`; e2e run |
-| 4 | `wait_analysis` raced the Cytoscape render (stats text appears before the 1503-node canvas render) | wait now requires stats text AND canvas node count AND non-empty step panel | E2E-1 stable |
-| 5 | E2E-2 race: labels read right after the step click | explicit `wait_net_label` polling | E2E-2 stable |
-| 6 | two invalid Cytoscape selectors/styles: `edge[data(weight) = "1"]` (string-vs-number comparison) and `target-arrow-scale` → console warnings | fixed/removed | E2E-1; no console warnings |
+| # | Сценарий | Результат |
+| - | -------- | --------- |
+| E2E-1 | Текстовый ввод: 1503/4983, 11 узлов сети, свойства k=29/L1/23/«нет» | PASSED (+скриншот `e2e-1-analysis.png`) |
+| E2E-2 | Проигрывание: one-click t1 → «p1 (5)», Отмена, «Срабатывание», клик по истории, Сброс | PASSED |
+| E2E-3 | Экспорт CSV (1504 строки, заголовок, µ0) + JSON (k=29, L1, 23) | PASSED |
+| E2E-4 | JSON-ввод: те же якоря | PASSED |
+| E2E-5 | История сессий: восстановление без пересчёта | PASSED |
+| E2E-6 | «Задание из практикума»: 71 карточка, фильтр 40, prefill PN-05, отчёт с (5,3,4,6,3,3) | PASSED (+`e2e-6-solve-pn.png`) |
+| E2E-7 | FA-03: граф 4 вершины, прохождение p1 p2 p2 p1 p2 по тактам (1 текущее → 3 посещённых) | PASSED (+`e2e-7-fa-graph.png`) |
+| E2E-8 | PNG сети / графа / «PNG всех» — валидные файлы | PASSED |
 
-## 5. Acceptance artifacts
+**Console (NFR-107):** фикстура `page` в `conftest.py` собирает
+`console.error`/`console.warning`/`pageerror` и роняет сценарий при любом
+сообщении. Все 8 сценариев — console чистый. (Находки фазы 4.7 —
+wheelSensitivity-предупреждение Cytoscape и невалидный селектор `n0` в
+breadthfirst — устранены в корне, D-055.)
 
-| Artifact | Content |
-| -------- | ------- |
-| `docs/acceptance/acceptance_markings.csv` | 1504 lines (header + 1503 markings, full web path) |
-| `docs/acceptance/acceptance_report.json` | full property report of the smoke net |
-| `docs/acceptance/acceptance_final.png` | final acceptance screenshot |
-| `docs/acceptance/e2e-1-analysis.png` | E2E-1 analysis view (1503-node graph + properties) |
+## 6. Ground truth (независимая проверка ответов решателей)
 
-`docs/acceptance/failures/` is empty — no red item produced a failure
-screenshot, and no defect remains open.
+- **ЛСС ОДУ (LSS-01…05):** ответы сверены с замкнутыми формулами
+  (`test_solvers_lss.py::test_ode_*`): LSS-01 `2t²+3t+3√2·cos(t+π/4)−3`,
+  LSS-02 `3t²/2+t−1+e^{−t}` (некорректные НУ источника — заметка),
+  LSS-03 `5/2−5e^{−t}+5e^{−2t}/2`, LSS-04 `t³e^{−t}/6` (кратный корень),
+  LSS-05 `sin t+(2/3)cos t−(2/3)cos 2t`.
+- **ЛСС-14a:** y_ч=(cos 3t−18 sin 3t)/65 (метод неопределённых коэффициентов,
+  резонанса нет); **LSS-15b:** e^{−7t}/13+12e^{−t/2}/13.
+- **ЛСС-11:** A(ω)=k/√(1+T²ω²), φ(ω)=−atan(Tω) — канонический вид для
+  апериодического звена.
+- **ЛСС-22/23:** формулы для c1, c2 через x1, x2 и начальное состояние;
+  W=1/(s+1) + заметка о несокращённом виде (s+2)/(s²+3s+2) (СЛАУ источника
+  несовместна — зафиксировано в отчёте решателя).
+- **FA-01…08:** последовательности состояний/выходных слов — по тактам,
+  сверены с таблицами §8 (FA-03: s0 s0 s1 s3 s3 s0, выходное слово
+  w0w1w0w0w0; w* в t0 не учитывается — заметка).
+- **PN-04/PN-21 (D-056):** эталоны MATERIALS_ANALYSIS §3 исправлены
+  (PN-04 — не консервативная: суммы 2,1,2,2,2; PN-21 — частичнотупиковая L1:
+  t2 недостижим из (1,1,0,0,1)/(0,0,0,1,1)); `solve('TASK-PN-04'|'TASK-PN-21', {})`
+  выдаёт verdict/conservative в соответствии с исправленными эталонами
+  (проверено 08.10.2026).
 
-## 6. Verdict
+## 7. Отклонения и замечания
 
-**ACCEPT.** Every exit criterion of `docs/TEST_PLAN.md` §6 is satisfied: the
-unit + property suite (80 passed), ruff, mypy strict, and the e2e suite (5/5)
-are green with the counts and durations recorded above; the acceptance
-artifacts are in place; the independent cross-check confirms the web path
-reproduces the frozen ground truth.
+1. **D-056 (документация, не код):** 2 эталона MATERIALS_ANALYSIS были ошибочны
+   («консервативная» у PN-04, «живая» у PN-21) — исправлены; решатели были
+   корректны с фазы 4.5.
+2. **D-057 (код):** `Report.to_dict()` не канонизировал sympy — 4 задачи ЛСС
+   (15/21/22/23) падали 500 только через HTTP (юнит-тесты сериализацию не
+   прогоняли); исправлено `_jsonify` в `report.py` + регрессионный тест;
+   приёмочный HTTP-прогон — 71/71.
+2. **LSS-23:** источник методички содержит несовместную СЛАУ; решатель
+   возвращает W=1/(s+1) (канонизация) и описывает расхождение в `notes`.
+3. **LSS-20:** sinh ≡ sin на комплексном аргументе — приведено с заметкой.
+4. Console-чек e2e строгий (падает на любом warning) — осознанное решение
+   (NFR-107); при обновлении Cytoscape/Vue возможны ложные срабатывания —
+   фиксировать в корне, как в D-055.
 
-Residual notes (not blockers):
+## 8. Вывод
 
-- No load testing — explicitly out of scope (TEST_PLAN §1); NFR-001 is a
-  single-run budget, not a concurrency demand.
-- Liveness / properties on unbounded nets are the documented ω-approximation
-  (A-05 / ADR-0002).
-- The bounded-net coverability tree is cap-protected: the smoke net's KM tree
-  grows to 1.9M+ nodes in 20 s, so the cap applies as a safety device (D-034).
+Все гейты зелёные; требования раунда 2 (FR-1xx…FR-5xx, NFR-1xx) покрыты
+тестами: 71/71 задача каталога решается и сверена с эталонами (проверено и через HTTP API), UI (Vue 3 +
+Vite) проходит 8 e2e-сценариев с чистым console, производительность в 25–125
+раз ниже бюджетов. **Вердикт: приёмка (PROCEED), переход к фазе 6.**

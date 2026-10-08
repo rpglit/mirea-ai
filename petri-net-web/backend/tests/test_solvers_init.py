@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from petrinet.errors import UnknownTaskError
@@ -49,3 +51,12 @@ def test_custom_via_package() -> None:
     }
     report = solve("custom:firing", {"net": net, "sequence": ["t1"]})
     assert report.answer["final_marking"] == [1]
+
+
+def test_all_catalog_reports_json_serializable() -> None:
+    """Regression: to_dict() must be plain JSON for every catalog task —
+    sympy leftovers (Rational/Zero/Matrix) are canonicalized in Report.to_dict."""
+    for info in CATALOG:
+        report = solve(info.task_id)
+        dumped = json.dumps(report.to_dict(), sort_keys=True)
+        assert dumped

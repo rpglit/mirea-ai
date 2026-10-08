@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 Step = dict[str, Any]  # {step: int, title: str, text: str, latex?: str, data?: Any}
 
@@ -40,8 +40,14 @@ class Report:
     notes: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
-        """Return the JSON-ready dict with deterministic key order."""
-        return {
+        """Return the JSON-ready dict with deterministic key order.
+
+        The contract is *JSON-serializable*: sympy leftovers from the solvers
+        are canonicalized here (Integer -> int, other Rational -> "p/q",
+        Matrix -> nested lists, other Expr/Symbol -> str) so ``/solve`` never
+        depends on a solver str()-ing its own output.
+        """
+        payload: dict[str, Any] = {
             "answer": _sorted(self.answer),
             "find": list(self.find),
             "given": _sorted(self.given),
@@ -49,6 +55,7 @@ class Report:
             "solution": sorted(self.solution, key=lambda s: s.get("step", 0)),
             "task_id": self.task_id,
         }
+        return cast("dict[str, Any]", _jsonify(payload))
 
 
 SolveFn = Callable[[dict[str, Any]], Report]
@@ -74,3 +81,28 @@ class TaskInfo:
 
 def _sorted(mapping: dict[str, Any]) -> dict[str, Any]:
     return {key: mapping[key] for key in sorted(mapping)}
+
+
+def _jsonify(value: Any) -> Any:
+    """Deep-convert ``value`` into plain JSON types (sympy-safe)."""
+    if isinstance(value, dict):
+        return {str(key): _jsonify(val) for key, val in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_jsonify(item) for item in value]
+    try:
+        import sympy as sp
+
+        if isinstance(value, sp.MatrixBase):
+            return [
+                [_jsonify(value.row(i)[j]) for j in range(value.cols)]
+                for i in range(value.rows)
+            ]
+        if isinstance(value, sp.Rational):
+            if value.q == 1:
+                return int(value.p)
+            return str(value)
+        if isinstance(value, (sp.Expr, sp.Symbol)):
+            return str(value)
+    except ImportError:
+        pass
+    return value
