@@ -1,566 +1,481 @@
-# Architecture — petri-net-web
+# Архитектура — petri-net-web (раунд 2)
 
-petri-net-web is a single-container web application: a FastAPI (Python 3.12)
-backend that parses Petri nets from three intake channels (raw mathematical
-text, JSON, interactive form), builds the reachability graph or the Karp–Miller
-coverability tree, computes the full property set (boundedness, safety,
-liveness L0–L4, marking queries, deadlocks, dead transitions, home state,
-deadlock-free), and serves a vanilla-JS + Cytoscape frontend from the same
-process. Every analyzed net is a session persisted in SQLite (stdlib `sqlite3`,
-one row per session, `$DB_PATH` on the `petri-data` volume), so history,
-graphs and reports survive container restarts without recomputation (ADR-0005).
-The domain package `petrinet/` is framework-free and immutable (ADR-0001);
-only the API layer imports FastAPI and translates typed exceptions into HTTP
-(ADR-0006).
+Раунд 2 (08.10.2026). Цель (D-041): приложение УВЕРЕННО РЕШАЕТ все 71 задание
+архива методички — PN 40, LSS 23, FA 8 (каталог: `MATERIALS_ANALYSIS.md` §3) —
+и любые аналогичные, в формате и терминологии методички. База раунда 1
+сохраняется (D-001…D-040, ADR-0001…0006: FastAPI, SQLite, кап достижимости);
+раунд 2 добавляет: пакет решателей `solvers/`, расширенную модель сети
+(ингибиторы/приоритеты/τ/цветной слой), фронтенд Vue 3 + Vite (D-042),
+каталог TASK-XX как данные (ADR-0010). API раунда 1 может меняться (D-041).
 
-## Components
+## 1. Компоненты
 
-```mermaid
-flowchart LR
-  subgraph BROWSER["Browser (vanilla JS + Cytoscape SPA)"]
-    TABS["input tabs (text / json / form)"]
-    NET["net canvas"]
-    GRAPH["graph canvas"]
-    STEP["step panel (fire / undo / reset)"]
-    PROPS["properties panel"]
-  end
-  subgraph APP["FastAPI application (single container)"]
-    ROUTERS["routers (parse, graph, properties, fire, state, sessions, exports)"]
-    PARSER["parser"]
-    CORE["core (data model + firing)"]
-    REACH["reachability (BFS / Karp-Miller)"]
-    PROPMOD["properties (bounds, liveness, queries)"]
-    STORE["storage (SQLite sessions)"]
-  end
-  TABS --> ROUTERS
-  STEP --> ROUTERS
-  GRAPH -->|node click| ROUTERS
-  ROUTERS -->|render data| NET
-  ROUTERS -->|render data| PROPS
-  ROUTERS --> PARSER
-  ROUTERS --> CORE
-  ROUTERS --> REACH
-  ROUTERS --> PROPMOD
-  ROUTERS --> STORE
-  PARSER --> CORE
-  REACH --> CORE
-  PROPMOD --> CORE
+```
+ build stage (node:22-alpine, Dockerfile app):
+   frontend/ (Vue 3 script setup + Vite + cytoscape из npm)
+   npm ci → vite build → dist/ (base "./")  ──COPY --from=build──► /app/static
+ ▼
+ app (python:3.12-slim, контейнер petri-net-web, порт 8000, host ${APP_PORT:-8080}):
+   uvicorn petrinet.api.app:app
+   ├─ FastAPI JSON API (petrinet/api/) + /app/static — SPA Vue (тот же процесс)
+   ├─ домен petrinet/: core, parser, reachability, properties, solvers/{pn,lss,fa}, storage
+   └─ SQLite — /data/sessions.db ◄── named volume petri-data (ADR-0005)
+        │ только HTTP
+ ▼
+ e2e (ubuntu:24.04 + chromium + playwright, D-037), одноразовый:
+   BASE_URL=http://app:8000, скриншоты → docs/acceptance/
 ```
 
-The static frontend (no build step) is served by the same FastAPI app, so the
-container exposes one port: the JSON API and the SPA files (brief §7–8).
+- Один контейнер `app` отдаёт и API, и SPA (D-015); сборка фронтенда —
+  отдельный node-этап, в рантайме node нет (ADR-0007). Персистентное состояние
+  — только SQLite на томе `petri-data` (сессии, графы, отчёты свойств); отчёты
+  решателей — без состояния (§2.5).
 
-## Data flow
+Переменные окружения (compose → app):
 
-1. **Parse.** `parse_text` / `parse_json` / `parse_form` normalizes the input
-   to the canonical JSON model (ADR-0003) and returns an immutable `PetriNet`
-   (ADR-0001). Any failure raises `ParseError`/`ValidationError` and creates
-   no session (FR-001–FR-003 c3).
-2. **Session.** `POST /parse` stores the model as a SQLite row — uuid4 hex
-   id, `current_marking = µ0`, empty history (ADR-0005) — and returns the
-   session id.
-3. **Graph build.** `POST /graph` runs `reachability.build` in mode
-   `auto` | `bounded` | `coverability`; the structure (smoke net: 1503 nodes /
-   4983 edges, D-009) is persisted in `graph_json`.
-4. **Properties report.** `POST /properties` runs `properties.analyze` over
-   the stored structure, answering optional reachability/coverability
-   queries; the report is persisted in `report_json`.
-5. **State ops.** `POST /fire` performs `fire` / `undo` / `reset` against
-   `current_marking` + `history_json` (ADR-0005); clicking a graph node issues
-   a goto step (the marking must be in the stored graph, brief §8). Every op
-   returns the new `current_marking`, the active transitions, and the history
-   tail.
-6. **Exports.** `GET .../export/report` (JSON) and `GET .../export/markings`
-   (CSV: header = place names in declared order, one row per node in BFS
-   discovery order, brief §7) read the stored artifacts; PNG export is
-   client-side (Cytoscape, A-11).
+| Переменная | По умолчанию | Назначение |
+|---|---|---|
+| `APP_PORT` | 8080 | host-порт → контейнерный 8000 |
+| `LOG_LEVEL` | INFO | уровень логов (JSON-строки, `logging_setup.py`) |
+| `DB_PATH` | /data/sessions.db | путь к SQLite |
+| `REACH_MAX_MARKINGS` | 50000 | кап графа достижимости; превышение → 413 |
+| `PETRINET_STATIC_DIR` | /app/static | каталог собранной SPA |
 
-## Step execution (sequence)
+## 2. Бэкенд-модули
 
-```mermaid
-sequenceDiagram
-  participant U as User
-  participant UI as UI
-  participant API as FastAPI
-  participant CORE as core
-  participant DB as storage
-  U->>UI: "click enabled transition t"
-  UI->>API: "POST /fire {action: fire, transition: t}"
-  API->>DB: "load session row (model + current_marking)"
-  DB-->>API: "session"
-  API->>CORE: "enabled(net, current, t)"
-  CORE-->>API: "true"
-  API->>CORE: "fire(net, t, current)"
-  CORE-->>API: "new marking m'"
-  API->>DB: "set current_marking, append history {t, from, to}"
-  DB-->>API: "ok"
-  API-->>UI: "{current_marking, active_transitions, history_tail}"
-  UI->>UI: "update net canvas tokens, highlight graph node"
-  alt "undo"
-    U->>UI: "click undo"
-    UI->>API: "POST /fire {action: undo}"
-    API->>DB: "pop last step, restore its from-marking"
-    DB-->>API: "ok"
-    API-->>UI: "{current_marking, active_transitions, history_tail}"
-  else "reset"
-    U->>UI: "click reset"
-    UI->>API: "POST /fire {action: reset}"
-    API->>DB: "current_marking = mu0, history = []"
-    DB-->>API: "ok"
-    API-->>UI: "{current_marking, active_transitions, history_tail}"
-  end
-```
+Общие правила (ADR-0001/0006): доменный пакет `petrinet/` не импортирует FastAPI
+и бросает только подклассы `PetriNetError`; API-слой мапит исключения на HTTP.
+Все `error.message` — на русском (коды `error.code` — английские, как в раунде 1).
+JSON-ответы — детерминированный порядок ключей. Модули чистые и неизменяемые:
+вход — данные, выход — данные (кроме `storage` — SQLite).
 
-A `fire` of a disabled transition raises `TransitionNotEnabledError` → 409;
-`undo` on an empty history fails the same way, and any op on a deleted
-session returns the typed 404 (ADR-0005, ADR-0006).
+### 2.1 core — расширенная модель сети (PetriNet v2)
 
-## Error model
-
-| Exception (`petrinet/errors.py`) | HTTP | `error.code` |
-| -------------------------------- | ---- | ------------ |
-| `ParseError` | 422 | `parse_failed` |
-| `ValidationError` | 422 | `validation_failed` |
-| `UnknownSessionError` | 404 | `unknown_session` |
-| `CapExceededError` | 413 | `cap_exceeded` |
-| `TransitionNotEnabledError` | 409 | `transition_not_enabled` |
-| (any uncaught exception) | 500 | `internal_error` |
-
-Rule: domain modules raise only `PetriNetError` subclasses and never import
-FastAPI; the API layer registers one exception handler per class in
-`create_app()` mapping the type to the status and code above, building the
-body `{"error": {"code", "message", "details?"}}` (ADR-0006). No
-`HTTPException` is raised in domain code.
-
-## Module contracts
-
-### parser (`petrinet/parser.py`)
+- Входы: нормализованный JSON из `parser`; выходы: замороженный dataclass +
+  чистые функции (потребители: `reachability`, `properties`, `solvers_pn`, API).
+  Новые ошибки: `ConflictError` (409), `UnsupportedModelError` (422).
 
 ```python
-def parse_text(text: str) -> PetriNet:
-    """Raw mathematical notation (FR-001). Raises ParseError(position, message), then ValidationError."""
-
-def parse_json(payload: dict[str, object]) -> PetriNet:
-    """Canonical JSON object (ADR-0003). Raises ValidationError(problems: list of {path, message})."""
-
-def parse_form(payload: dict[str, object]) -> PetriNet:
-    """Form intake normalized to the canonical JSON object. Raises ValidationError."""
-```
-
-- All three channels normalize to the one canonical JSON (ADR-0003) and share
-  the same two-pass validator; equivalent descriptions produce the **same**
-  `PetriNet` (FR-001–FR-003).
-- `parse_text`: repetition in I/O sets counts as arc weight; a symbol not in
-  P/T, a non-integer marking value, or a marking of length ≠ |P| raises
-  `ParseError` with the character position (FR-001 c3).
-- `parse_json`/`parse_form`: pass 1 = JSON-Schema 2020-12 skeleton, pass 2 =
-  cross-field rules (arc references; `initial_marking` must cover ALL places —
-  a missing place is an error, not an implicit 0; REQUIREMENTS §8.4).
-- Absent top-level `inputs`/`outputs` and absent per-transition entries
-  normalize to empty maps (weight-0 arcs) in every channel
-  (REQUIREMENTS §8.8, ADR-0003).
-- The result is the frozen `PetriNet` of ADR-0001: declared place/transition
-  order, positive integer arc weights, `initial_marking` aligned to places.
-- Smoke: the three fixture descriptions (REQUIREMENTS §5.1/§5.2) yield one
-  net with P = p1..p6, T = t1..t5, µ0 = (7, 4, 2, 5, 4, 3).
-
-### core (`petrinet/core.py`)
-
-```python
-Marking = tuple[int, ...]  # m[i] = tokens on places[i]; len(m) == len(net.places)
+ArcWeight = tuple[str, int]              # (позиция, вес)
+Marking = tuple[int, ...]                # m[i] = меток на places[i]
 
 @dataclass(frozen=True)
-class PetriNet:
+class Colors:                            # цветной слой — только данные (A-21)
+    initial_values: dict[str, list[str]]  # позиция → значения начальных меток
+    guards: dict[str, list[str]]          # переход → предусловия входных дуг (выражения)
+    output_exprs: dict[str, list[str]]    # переход → выражения значений выходных меток
+
+@dataclass(frozen=True)
+class PetriNet:                          # v2 — расширяет модель раунда 1
     places: tuple[str, ...]
     transitions: tuple[str, ...]
-    inputs: tuple[tuple[tuple[str, int], ...], ...]
-    outputs: tuple[tuple[tuple[str, int], ...], ...]
+    inputs: tuple[tuple[ArcWeight, ...], ...]    # I(t): [(p, w)]
+    outputs: tuple[tuple[ArcWeight, ...], ...]   # O(t): [(p, w)]
+    inhibitors: tuple[tuple[str, ...], ...]      # ⊣(t): [p], вес ингибитора всегда 1
+    priorities: tuple[int, ...] | None           # Pr t по переходам; None — нет
+    delays: tuple[tuple[ArcWeight, ...], ...]    # τ на ВЫХОДНЫХ дугах (p, τ), τ ≥ 1
+    colors: Colors | None                            # None — классическая сеть
     initial_marking: Marking
-
-    def enabled(self, marking: Marking, t: str) -> bool:
-        """True iff marking[p] >= w for every (p, w) in inputs[t]; O(|P|)."""
-
-    def fire(self, marking: Marking, t: str) -> Marking:
-        """Return marking - I(t) + O(t); raises TransitionNotEnabledError if not enabled."""
-
-    def active(self, marking: Marking) -> list[str]:
-        """Transitions enabled at marking, in declared transition order."""
 ```
 
-- Semantics are exactly ADR-0001 (equivalent free functions
-  `enabled(net, t, m)` / `fire(net, t, m)`); the method form is the module
-  contract.
-- Firing is O(|P|): one pass rebuilding a |P|-tuple; the input marking and
-  the net are never mutated (immutability, frozen dataclass).
-- `t` is assumed declared (guaranteed by ADR-0003 validation); a transition
-  with no input arcs is enabled at every marking.
-- `fire` on a disabled transition raises `TransitionNotEnabledError`
-  (ADR-0006); `active` order is deterministic, so response arrays are stable.
-- Smoke anchors (D-014), µ0 = (7, 4, 2, 5, 4, 3):
-  `active(µ0) == ["t1", "t2", "t3", "t4", "t5"]`;
-  `fire(µ0, "t1") == (5, 5, 2, 5, 4, 3)`.
+Публичный API (методы + эквивалентные свободные функции, как в раунде 1):
 
-### reachability (`petrinet/reachability.py`)
+| Функция | Вход | Выход | Смысл |
+|---|---|---|---|
+| `enabled(net, m, t, *, usable=None)` | маркировка; `usable` — вектор «доступных сейчас» меток (τ-сети), по умолчанию `m` | bool | `m[p] ≥ w` для всех (p,w) ∈ I(t) **и** `usable[p] == 0` для всех p ∈ ⊣(t) (ингибитор блокирует, пока в позиции ≥ 1 метки) |
+| `fire(net, m, t)` | маркировка | Marking | `m − I(t) + O(t)`; иначе `TransitionNotEnabledError` |
+| `fire_set(net, m, ts)` | маркировка, подмножество | Marking | параллельное срабатывание: все ts разрешены и попарно не конфликтуют (нет общей входной позиции — глоссарий «конфликт»); иначе `ConflictError` |
+| `active(net, m, *, usable=None)` | маркировка | list[str] | разрешённые переходы в порядке объявления; с `priorities` — в каждой конфликтной группе только максимум Pr t |
+| `incidence(net)` | — | (W−, W+, W) n×m | матричный способ (М7): `W = W+ − W−` |
+| `minimal_marking(net, *, parallel=False)` | — | Marking | М6: покомпонентный максимум требований I(t); `parallel=True` — сумма требований конфликтующих (PN-07: t1+t2 → (3,3,0)) |
+
+- Совместимость: при `inhibitors == priorities == delays == colors == None`
+  поведение идентично раунду 1 (якоря D-009…D-014, D-035 сохраняются).
+- Время: core время не ведёт; τ-доступность — в `solvers_pn` (дискретная
+  симуляция по тактам: метка, помещённая в p в такт n, доступна с n + τ(p);
+  по умолчанию τ = 1) через `enabled(..., usable=...)`. Цветной слой: core хранит
+  данные; семантика (гварды, выражения) — `solvers_pn`, безопасный парсер
+  арифметических выражений, произвольный код не выполняется (A-21).
+
+### 2.2 parser — 3 канала + расширение JSON-схемы
+
+Публичный API без изменений: `parse_text(text)`, `parse_json(payload)`,
+`parse_form(payload)` → `PetriNet`; ошибки `ParseError(position, message)` /
+`ValidationError(problems: [{path, message}])`.
+
+- Текст (S=(P,T,I,O,µ)) — без изменений: грамматика дословно методичка,
+  кратность позиции в I/O = вес дуги.
+- JSON-схема v2 (рантайм: `backend/src/petrinet/schema.json`, зеркало —
+  `docs/schemas/`, D-028). Новые ОПЦИОНАЛЬНЫЕ поля (отсутствуют → классическая
+  сеть): `inhibitors: {t: [p, ...]}` (дуги ⊣), `priorities: {t: int}` (Pr t),
+  `delays: {t: {p: τ}}` (τ ≥ 1, только выходные дуги t→p), `colors:
+  {initial_values, guards, output_exprs}`. `additionalProperties` — `false`;
+  валидация — те же два прохода (ADR-0003), pass 2 +: ключи inhibitors/priorities
+  ∈ T, позиции ∈ P, пары delays — существующие выходные дуги.
+- `parse_form`: arcs + `direction: "inhibitor"`, поля `priorities`, `delays` (§3).
+
+### 2.3 reachability — BFS граф + Кэрп–Миллер
+
+Публичный API без изменений: `build(net, mode="auto"|"bounded"|"coverability",
+cap=50000) -> ReachableStructure`; `CapExceededError` → 413 (id узлов `n<index>`,
+порядок BFS/предобход — ADR-0002).
+
+- Классические сети — без изменений (якорь: 1503 узла / 4983 рёбра, D-009;
+  неограниченный фикстура — дерево с одним ω).
+- Ингибиторы/приоритеты: BFS поддерживается (`enabled` с учётом ⊣; приоритеты
+  не меняют множества достижимых маркировок); Кэрп–Миллер с ингибиторами:
+  ω-метка блокирует ингибиторную дугу навсегда.
+- Сети с `delays` или `colors`: `UnsupportedModelError` → 422 — пространство
+  «маркировка × время/значения» не конечно; анализ — симуляция `solvers_pn` (§6).
+
+### 2.4 properties — расширение отчёта
+
+Публичный API: `analyze(net, structure) -> Report` (расширяется), `is_reachable`,
+`is_coverable` — без изменений; новые функции:
+
+- `conservative(net, structure) -> ConservativeInfo`: `per_transition`
+  `{t: {"in": Σw(I(t)), "out": Σw(O(t)), "equal": bool}}` + `constant_sum`
+  (Σ m[p] постоянно по всем узлам структуры);
+- `sequence_report(net, marking, sigma) -> SequenceReport`: шаги
+  `[{transition, from, to, enabled}]`, `v(σ)`, `mu_prime = marking + W·v(σ)`
+  (М7, формула (1) методички); невыполнимый шаг → `executable: false` + номер шага;
+- `verdict(report) -> str`: `"живая" | "тупиковая" | "частичнотупиковая" | "неживая"`.
+
+Новые поля `Report`: `conservative: bool` (оба определения методички;
+попереходная разбивка в отчёте), `verdict: str` (критерии ниже),
+`mu_min: list[int]` (М6 — по запросу).
+
+Критерии вердикта (детали — `Report.liveness`, L0–L4 сохраняется):
+**живая** ⇔ level == L4 и `deadlocks == ∅`; **тупиковая** ⇔ `deadlocks ≠ ∅` и
+в подграфе нет циклов с t-рёбром (все цепочки конечны — эталонная сеть: DAG,
+D-035); **частичнотупиковая** ⇔ `deadlocks ≠ ∅` и есть цикл с t-рёбром (часть
+переходов погибает, часть работает бесконечно); иначе — `неживая`.
+
+Терминология — глоссарий методички (GAP §5, BUG-4): «разрешённый переход»,
+«срабатывание», «k-ограниченная (k=…)», «безопасная», «консервативная», «Тупики: N»
+(без двойного отрицания); API-поле `active_transitions` сохраняется (UI: «разрешённые переходы»).
+
+### 2.5 solvers (НОВЫЙ пакет) — `backend/src/petrinet/solvers/`
+
+Входы: данные задачи (dict); выходы: `Report` — JSON-сериализуемый словарь
+(`report.py`, ключи сортированы). Пакет фреймворк-свободен. Файлы: `__init__.py`
+(реестр `CATALOG`, `solve`, `catalog`), `report.py`, `solvers_pn.py`,
+`solvers_lss.py` (+ `links.py` — 11 стандартных звеньев), `solvers_fa.py`
+(+ `automata.py` — модель автомата).
+
+Контракт отчёта (общий; формат «Дано/Найти/Решение/Ответ» + пояснения):
 
 ```python
-OmegaMarking = tuple[int | None, ...]  # None = omega (ADR-0001)
-
-@dataclass(frozen=True)
-class ReachableStructure:
-    kind: Literal["graph", "coverability"]
-    nodes: list[tuple[str, Marking | OmegaMarking]]  # (node id, marking); nodes[0] is mu0
-    edges: list[tuple[str, str, str]]                # (src_id, transition, dst_id)
-    stats: dict[str, int]                            # {"nodes": N, "edges": M}
-
-def build(net: PetriNet, mode: Literal["auto", "bounded", "coverability"] = "auto") -> ReachableStructure:
-    """BFS reachability graph (auto/bounded) or Karp-Miller coverability tree; raises CapExceededError on the cap."""
-```
-
-- `nodes[0]` is always µ0; discovery order is BFS (graph) / preorder (tree);
-  node id = `"n<index>"`, deterministic across runs for the same net
-  (ADR-0002).
-- Transitions expand in declared order, so the edge id `n<src>:t<n<dst>` is
-  stable; `stats` = `{"nodes": N, "edges": M}`.
-- `auto`/`bounded`: hard cap `REACH_MAX_MARKINGS` (default 50000); exceeding
-  it raises `CapExceededError(limit)` → 413 with
-  `details.suggestion: "coverability"` (ADR-0002, NFR-002).
-- `coverability`: classical Karp–Miller with the ancestor-correction step
-  (ω promotion where the candidate strictly exceeds a path node, ADR-0002);
-  ω dominates naturals; the construction always terminates, and the same `cap`
-  applies as a safety device against the bounded-net tree explosion (D-034).
-- Smoke: `build(smoke_net, "auto")` → kind `"graph"`, 1503 nodes / 4983 edges
-  (D-009); the unbounded fixture (REQUIREMENTS §5.6) terminates in
-  coverability mode with a single ω node.
-
-### properties (`petrinet/properties.py`)
-
-```python
-LivenessLevel = Literal["L0", "L1", "L3", "L4"]  # classical scale (ADR-0004); L2 never emitted on a finite graph
-
-@dataclass(frozen=True)
-class TransitionLiveness:
-    occurs: bool
-    level: LivenessLevel      # L0 dead / L1 occurs / L3 cycle-with-t / L4 live (strong)
-
-@dataclass(frozen=True)
-class Liveness:
-    level: LivenessLevel      # net level = min over transitions (order L0<L1<L3<L4)
-    transitions: dict[str, TransitionLiveness]
-
 @dataclass(frozen=True)
 class Report:
-    per_place_k: dict[str, int | None]  # place -> k_p; None = unbounded (omega)
-    global_k: int | None                # max of k_p; None = net unbounded
-    bounded: bool                       # all places bounded (global_k is not None)
-    safe: bool                          # 1-bounded (all k_p <= 1)
-    liveness: Liveness
-    deadlocks: list[MarkingOrOmega]  # tree labels may contain omega (None)
-    dead_transitions: list[str]
-    home_state: bool
-    deadlock_free: bool
-    approximation: Literal[None, "omega"]
-    stats: dict[str, int]
+    task_id: str          # "TASK-PN-05" | "custom:<группа>"
+    given: dict           # Дано: эхо входа, читаемый
+    find: list[str]       # Найти: пункты (формулировка методички)
+    solution: list[Step]  # Решение: шаги
+    answer: dict          # Ответ: машиночитаемый результат
+    notes: list[str]      # Пояснения своими словами, допущения, проверки
 
-def analyze(net: PetriNet, structure: ReachableStructure) -> Report:
-    """Full property set over the stored structure (FR-007..FR-014)."""
-
-def is_reachable(net: PetriNet, structure: ReachableStructure, target: Marking) -> bool | None:
-    """Exact membership in the reachability graph; None on a coverability tree (undecidable in general)."""
-
-def is_coverable(net: PetriNet, structure: ReachableStructure, target: Marking) -> bool | None:
-    """True iff some structure marking m has m[p] >= target[p] for all p (omega >= any natural)."""
+Step = dict: {step, title, text, latex?, data?}  # text — человекочитаемо (формулы
+# unicode); latex — опционально (KaTeX — опция, §3); data — артефакты шага
+# (таблицы, векторы, матрицы)
 ```
 
-- Exact for `kind == "graph"`; for `"coverability"` structures every derived
-  value carries `approximation = "omega"` (ω over-approximates, ADR-0002),
-  and `is_reachable` returns `None` there — exact reachability is undecidable
-  in general, the tree answers coverability instead. `is_coverable` is
-  answered from either structure, with the same caveat on the tree.
-- Liveness (ADR-0004, classical scale): `occurs` = enabled at some reachable
-  marking; per-transition `level` = L4 if the backwards closure from the
-  enablement set covers all reachable markings (strong, MSU), else L3 if some
-  reachable cycle contains a t-edge (one Tarjan SCC pass shared by all t; on
-  a finite graph L2 <=> L3 so L2 is never emitted), else L1 if occurs, else
-  L0. Net `level` = the minimum over transitions (order L0 < L1 < L3 < L4);
-  a net at L4 is deadlock-free.
-- Deadlock = reachable marking at which no transition is enabled; dead
-  transition = never occurs; home state = every reachable marking can reach
-  µ0; deadlock-free = empty deadlock list.
-- Deterministic serialization: reports and query answers are JSON with sorted
-  keys; `deadlocks` in lexicographic (tuple-sorted) order, `dead_transitions`
-  in declared transition order (brief §7).
-- Smoke (D-010…D-013, D-035): `per_place_k` = [10, 8, 16, 29, 8, 10] over
-  p1..p6, `global_k` = 29, `safe` = False, `liveness.level` = `"L1"` (all
-  five transitions L1 — each occurs, but no reachable cycle contains a
-  t-edge: the potential W = 3·p1 + 4·p2 + p3 + p4 + 3·p5 + 2·p6 strictly
-  decreases per firing, so every run ends in a deadlock), 23 deadlocks,
-  `dead_transitions` = [], `home_state` = False, `deadlock_free` = False.
+Реестр (ADR-0010): `CATALOG: dict[task_id → TaskInfo]`,
+`TaskInfo = {task_id, group, title, source, type, input_kind, fn}` — каталог
+задач как данные (карточки `MATERIALS_ANALYSIS.md` §3), `fn` — функция решателя.
+Публичный API: `solve(task_id, data) -> Report`, `catalog() -> list[TaskInfo]`.
 
-## API routes
+Ошибки: неизвестный `task_id` → `UnknownTaskError` (422); невалидные данные →
+`ValidationError` (422); превышение капа симуляции/достижимости →
+`CapExceededError` (413); ошибка sympy → `SolverError` (500 `solver_failed`).
 
-All routes speak JSON (`application/json`) except the markings export
-(`text/csv`); every JSON response uses deterministic (sorted) key order
-(brief §7). Errors use the body of the Error model above. `POST /goto`
-accepts only a marking that is a node of the stored reachability graph;
-anything else is 422 `validation_failed`.
+#### 2.5.1 solvers_pn — `solve_pn(task_id, net, options) -> Report`
 
-| method | path                          | request                                                              | response (200/201)                                                       | errors                                      |
-| ------ | ----------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------- |
-| POST   | `/parse`                      | `{format: "text"\|"json"\|"form", payload, name?}`                   | 201 `{session_id, places, transitions, initial_marking, inputs, outputs}` (arc maps `{t: {p: w}}` for the net canvas) | 422 `parse_failed`, `validation_failed`     |
-| POST   | `/graph`                      | `{session_id, mode?}` (`auto`\|`bounded`\|`coverability`, default `auto`) | 200 `{kind, node_count, edge_count, capped, structure: {nodes, edges}}` (deterministic, ADR-0002 ids) | 404 `unknown_session`, 413 `cap_exceeded`   |
-| POST   | `/properties`                 | `{session_id, queries?}` (`reachable_marking?`, `coverable_marking?`) | 200 full report + query answers (sample below)                          | 404 `unknown_session`, 422 `validation_failed` |
-| POST   | `/fire`                       | `{session_id, action: "fire"\|"undo"\|"reset", transition?}`         | 200 `{current_marking, active_transitions, history_tail}`                | 404 `unknown_session`, 409 `transition_not_enabled` |
-| POST   | `/goto`                       | `{session_id, marking: [int, ...]}`                                  | 200 `{current_marking, active_transitions, history_tail}`                | 404 `unknown_session`, 422 `validation_failed` |
-| GET    | `/state/{session_id}`         | —                                                                    | 200 `{current_marking, active_transitions, history}`                     | 404 `unknown_session`                       |
-| GET    | `/sessions`                   | —                                                                    | 200 array of `{session_id, name, created_at, places, transitions}`       | 500 `internal_error`                        |
-| GET    | `/sessions/{id}`              | —                                                                    | 200 `{session_id, name, created_at, input_format, places, transitions, inputs, outputs, current_marking, graph_built, report_computed}` (inputs/outputs arc maps for the net canvas on restore) | 404 `unknown_session` |
-| GET    | `/sessions/{id}/graph`        | —                                                                    | 200 the stored structure (same shape as `POST /graph` without `capped`) — session restore without recomputation | 404 `unknown_session`, 422 `validation_failed` (not built) |
-| DELETE | `/sessions/{id}`              | —                                                                    | 204, no body                                                             | 404 `unknown_session`                       |
-| GET    | `/sessions/{id}/export/report` | —                                                                  | 200 `application/json`, stored report, `Content-Disposition: attachment` | 404 `unknown_session`                       |
-| GET    | `/sessions/{id}/export/markings` | —                                                                 | 200 `text/csv`, stored markings, `Content-Disposition: attachment`       | 404 `unknown_session`                       |
-| GET    | `/healthz`                    | —                                                                    | 200 `{"status": "ok"}`                                                   | —                                           |
+`net` — JSON сети (как §4.1), `options` — `{sequence?, parallel?, max_steps? (≤ 1000)}`.
 
-### Request/response examples
+| Группа TASK-PN | Метод | Что в отчёте |
+|---|---|---|
+| 01–07, 16, 19, 22–26, 29, 31, 34, 38–40 — построение и срабатывания | М1–М4 | S=(P,T,I,O,µ), разрешённые с обоснованием (w⁻≤µ), цепочки µ→µ′ пошагово, итоговая маркировка, «сколько раз сработает t» (PN-06) |
+| 04, 08, 21, 27–28, 31 — классификация | М5 | вердикт живая/тупиковая/частичнотупиковая + k + безопасная + консервативная, каждое с обоснованием |
+| 07, 09, 19 — минимальная маркировка | М6 | µmin (параллельный случай — сумма требований) |
+| 17, 18, 35 — матричный способ | М7 | W−/W+/W, разрешённость, последовательность σ: v(σ), µ′ = µ + W·v(σ), выполнима ли (где ломается) |
+| 38, 39, 40 — машина Минского | М11 | кодирование Inc/Dec/Halt переходами + симуляция программы (регистры + текущая команда) до Halt |
+| 10, 30 — приоритеты | М8 | конфликты, выбор по Pr t, результирующие маркировки |
+| 15, 32 — временные сети | М9 | дискретная симуляция по тактам: τ на дугах (по умолчанию 1), таблица «такт → доступные/срабатывающие»; PN-15: цикл 9 тактов (5+3+1) |
+| 33 — ингибиторы | М2⊣ | сценарии a≥1 / a=0 (Dec a,k,l: t1..t5 vs ветвление) |
+| 36, 37 — цветные | М12 | пошаговая симуляция значений и гвардов (только симуляция, A-21) |
+| 02 — «достроить сеть» | — | режим модификации сессии: отчёт содержит КАНДИДАТ-сеть (полный JSON: добавленные дуги/позиции) + проверку на ней; UI загружает кандидата в новую сессию (зафиксировано в §6) |
 
-**`POST /parse`** — request (text format, smoke net, REQUIREMENTS §5.1):
+Любое пользовательское задание той же структуры — `task_id: "custom:<группа>"`.
+
+#### 2.5.2 solvers_lss — `solve_lss(task_id, spec) -> Report` (sympy, точная арифметика)
+
+`spec` — по §4.2. Группы (методы `MATERIALS_ANALYSIS.md` §7.2):
+
+| Группа TASK-LSS | Метод | Что в отчёте |
+|---|---|---|
+| 01–05 — ОДУ с НУ | М4 | характеристический многочлен P(s), корни (вещественные/кратные/комплексные α±iω) → y_о(t); Таблица 2 — вид y_ч(t) под rhs (полином / e^{αt} / sin·cos, резонанс × t^k); ЛАУ на c_i по НУ (избыточное y″(0) — с примечанием); y(t) = y_о + y_ч |
+| 06, 07, 17–20 — весовая функция | М2, М3, М9 | g(t,τ) через δ-вход (вариация постоянной, шаг за шагом), проверка стационарности (зависит только от t−τ) |
+| 08–10, 14–16 — передаточная | М1 | подстановка x(t)=e^{st}, y(t)=Φ(s)e^{st}; сокращение e^{st}; Φ(s) отношение полиномов |
+| 10–12, 14 — АЧХ/ФЧХ | М8 | s=iω, домножение на сопряжённое: A(ω)=‖Φ(iω)‖, φ(ω)=arg Φ(iω) (+ таблица значений по частотам) |
+| 13 — 11 стандартных звеньев | М1 + `links.py` | каталог: следящий Φ=1; экстраполятор e^{sa}; запаздывающее e^{−sa}; усилитель k; дифференцирующее s; интегрирующее 1/s; форсирующее 1 k(Ts+1); форсирующее 2 k(T²s²+2αTs+1); апериодическое k/(Ts+1); гармонические колебания; колебательное — для каждого + g(t,τ) (ср. TASK-LSS-18) |
+| 21–23 (+14) — пространство состояний | М11, М7 | F, B, C, D из ОДУ (x1=y,…,xn=y^(n−1)); (sE−F)⁻¹ (sympy `Matrix.inv`), W(s)=C(sE−F)⁻¹B; СЛАУ для X(0): CX0=y0, CFX0=y0′, … и её решение; разложение «переходный процесс + вынужденное движение» |
+
+Ограничения: порядок ОДУ ≤ 6, символьные параметры (T, k, ξ) — символы sympy,
+таймаут 30 с → `SolverError` (§6).
+
+#### 2.5.3 solvers_fa — `solve_fa(task_id, spec) -> Report`
+
+Модель (`automata.py`): `Automaton` — A = <P, S, s0, φ[, W, ψ]>, `kind ∈
+{"none", "moore", "mealy"}`; φ: P×S→S; ψ: S→W (Мура) или P×S→W (Мили).
+Нормализация: вход в любом из 3 способов (перечисление/таблица/граф) — ко всем трём.
+
+| Группа TASK-FA | Что в отчёте |
+|---|---|
+| 01–04, 07, 08 — задание автомата | перечисление (равенства sk=φ(si,pj) + ψ), таблица переходов (строки — состояния, столбцы — входы; Мура — со столбцом выходов, Мили — совмещённая sj/wk), граф (вершины si[/wi], дуги pk[/wq]) — в нужных комбинациях (07: таблица→перечисление+граф; 08: граф→перечисление+таблица) |
+| 01–05 — моделирование слова | таблица по автоматным тактам ti: состояние s(t), вход p(t), выход w(t); Мура: w0* в t0 (определяется s0, не реакция на вход) не учитывается; Мили: в t0 выход пуст, первый выход — после первого символа; ответ — последовательность состояний + выходное слово |
+| 05 — сравнение Мура/Мили | переработка одного слова обоими автоматами, вывод об эквивалентности (на данном слове / на всём наборе слов длины ≤ k) + момент считывания выхода (разница по методичке) |
+| 06 — Мура → Мили | конструкция: P=Po, S=So, s0=s0o, φ=φo; выход Мили на переходе (si,pj→sk) = выход Мура целевого ψ(sk); таблица + граф («символы с вершин перенесены на входящие дуги») |
+
+`spec` — по §4.3; `kind` задачи: `normalize` | `simulate` | `compare` | `to_mealy`.
+
+### 2.6 api — `petrinet/api/` (app.py + routes.py)
+
+Новые и изменённые эндпоинты («метод путь → вход → выход → ошибки»):
+
+| Метод, путь | Вход | Выход (200) | Ошибки |
+|---|---|---|---|
+| `POST /solve` | `{task_id: "TASK-XX-NN" \| "custom:<группа>", data: object}` | `Report` (given/find/solution/answer/notes) | 422 `unknown_task`, 422 `validation_failed`, 413 `cap_exceeded`, 422 `unsupported_model`, 500 `solver_failed` |
+| `GET /catalog` | — (опц. `?group=PN\|LSS\|FA`) | `[{task_id, group, title, source, type, input_kind}]` | 500 |
+| `POST /matrices` | `{session_id}` | `{W_minus, W_plus, W}` (n×m, порядок P×T) | 404 `unknown_session`, 422 `unsupported_model` (colors) |
+| `POST /minimal-marking` | `{session_id, parallel?: bool}` | `{mu_min: [int..], per_transition: {t: [int..]}}` | 404, 422 |
+| `POST /properties` (расширен) | `{session_id, queries?, with?: {matrices?, mu_min?, sequence?: [t..]}}` | отчёт раунда 1 + `conservative` (+разбивка), `verdict`, `mu_min?`, `sequence?` `{steps, v, mu_prime, executable}` | 404, 422 |
+
+Изменения в эндпоинтах раунда 1:
+
+- все `error.message` — на русском (коды без изменений) — BUG-8;
+- `GET /sessions` — параметр `limit` (по умолчанию 50, новые первыми) — BUG-9;
+- `POST /parse` — ответ + поля расширенной модели (inhibitors/priorities/
+  delays/colors — когда заданы), `name` заполняется UI;
+- `/solve` без состояния: не требует и не создаёт сессию (данные → отчёт);
+  сохранение в историю — UI парсит PN-сеть в именованную сессию.
+
+Без изменений: `POST /parse` (201), `/graph`, `/fire`, `/goto`, `GET /state/{id}`,
+`/sessions/{id}` (+`/graph`), `DELETE /sessions/{id}`,
+`/sessions/{id}/export/{report,markings}`, `/healthz`; модель ошибок — ADR-0006 +
+коды `unknown_task` (422), `conflict` (409), `unsupported_model` (422),
+`solver_failed` (500).
+
+### 2.7 storage — без изменений (ADR-0005)
+
+`SessionStore` (create/get/list/delete/set_model/set_graph/set_report/set_state),
+одна строка на сессию в `/data/sessions.db`; поле `name` уже существует — UI
+заполняет (BUG-9). Отчёты решателей в БД не хранятся (без состояния, §2.6);
+лимит списка — на уровне API.
+
+### 2.8 config / errors / logging_setup
+
+- `config.py` — без новых полей; капы решателей — константы `solvers/__init__.py`:
+  `SOLVER_MAX_STEPS = 1000`, `LSS_MAX_ORDER = 6`, `SOLVER_TIMEOUT_S = 30`.
+- `errors.py`: + `UnknownTaskError` (422), `ConflictError` (409),
+  `UnsupportedModelError` (422), `SolverError` (500); все `__str__` — русские.
+- `logging_setup.py` — без изменений (JSON-строки, level из env).
+
+## 3. Фронтенд (Vue 3 + Vite + Cytoscape.js)
+
+Стек (D-042): Vue 3 (Composition API, `<script setup>`) + Vite; графы —
+Cytoscape.js из npm (вендор раунда 1 отменяется, D-036 → ADR-0007). Сборка —
+build stage Dockerfile (см. §1); UI — полностью русский.
+
+Дерево компонентов (`frontend/src/`):
+
+```
+App.vue — шапка (название сессии), переключатель видов, тосты
+├── HomeView.vue — экран «Задание из практикума»: TaskPicker + форма данных задачи + «Решить» → SolverView
+├── TaskPicker.vue — GET /catalog по группам PN/LSS/FA: карточка = title,
+│   source (семинар/страница), type (задание/пример/зачёт), условие (цитата)
+├── NetView.vue — InputTabs + NetCanvas + ReachabilityCanvas + PropertiesPanel + StepPanel
+├── InputTabs.vue — вкладки text/json/form; форма: позиции, переходы, дуги
+│   (direction input/output/inhibitor; weight ≥1 с валидацией — BUG-7),
+│   priorities, delays, маркировка, имя сессии (BUG-9)
+├── NetCanvas.vue — Cytoscape: кружки/планки; подписи весов (BUG-2), ⊣ пунктиром,
+│   τ; подсветка разрешённых переходов (BUG-10); клик по переходу = срабатывание (BUG-5)
+├── ReachabilityCanvas.vue — граф/дерево; подсветка ТЕКУЩЕГО узла следует за
+│   step/undo/reset/goto (BUG-3); клик узла → /goto; coverability по 413
+├── PropertiesPanel.vue — терминология методички (BUG-4): verdict
+│   «Живая/Тупиковая/Частичнотупиковая», «k-ограниченная (k=…)», «Безопасная»,
+│   «Консервативная» (+разбивка), «Тупики: N»; L-шкала — свёрнутые «Детали»
+├── StepPanel.vue — «Срабатывание/Отмена/Сброс», кликабельная история (BUG-6)
+├── SolverView.vue — ReportPanel («Дано/Найти/Решение (шаги)/Ответ/Пояснения»;
+│   формулы: HTML+sub/sup по `text`, `latex` — опциональный KaTeX; таблицы
+│   Step.data; экспорт JSON/PNG) + AutomatonCanvas (НОВЫЙ: вершины-состояния
+│   si[/wi], дуги pk[/wq], s0 — двойной обвод) + LssReport (НОВЫЙ: корни,
+│   y_о/y_ч, Φ(s); АЧХ/ФЧХ — формулы + таблица A(ω), φ(ω); F,B,C,D, (sE−F)⁻¹ — HTML)
+├── SessionsPanel.vue — история: имя (не UUID), limit 50, открыть/удалить, восстановление без пересчёта (FR-406)
+└── ExportMenu.vue — PNG активного канваса, JSON (отчёт свойств), CSV (метки)
+```
+
+- Состояние: один reactive store (`store.js`), объект на сессию
+  `{session, model, graph, report, current, history, solverReport}`; источник
+  истины — ответы API; переключение видов без vue-router.
+- API-клиент (`api.js`): fetch-обёртка; ошибка — тост с русским `message`
+  (`details` — списком). Экспорт PNG (фикс BUG-1): `cy.png({ output:
+  "blob-promise" })` → `URL.createObjectURL` (канвасы сети, графа, автомата).
+- Отклик > 2 с — индикатор прогресса; 413 — предложение coverability.
+
+## 4. Форматы данных (JSON-схемы входа решателей)
+
+Общие оговорки: все поля опциональны, кроме отмеченных; имена —
+`^[A-Za-z_][A-Za-z0-9_]*$`; числа — int (LSS — rational числом/строкой);
+символы sympy — строки ("T", "k", "xi").
+
+### 4.1 PN — сеть (вход `POST /solve` для TASK-PN-NN и `custom:<группа>`)
 
 ```json
 {
-  "format": "text",
-  "payload": "S = (P, T, I, O, µ),\nP = {p1, p2, p3, p4, p5, p6}, T = {t1, t2, t3, t4, t5},\nI(t1) = {p1, p1}, O(t1) = {p2},\nI(t2) = {p1, p6}, O(t2) = {p3, p3},\nI(t3) = {p2}, O(t3) = {p4, p4, p4},\nI(t4) = {p2, p3, p4, p4}, O(t4) = {p5, p6},\nI(t5) = {p5, p5}, O(t5) = {p1, p3},\nµ = (7, 4, 2, 5, 4, 3)."
+  "places": ["p1", "p2", "p3"],
+  "transitions": ["t1", "t2"],
+  "inputs":  {"t1": {"p1": 1, "p3": 1}, "t2": {"p2": 1, "p3": 1}},
+  "outputs": {"t1": {"p3": 1}, "t2": {"p3": 1}},
+  "initial_marking": {"p1": 2, "p2": 1, "p3": 1},
+  "inhibitors": {"t2": ["a"]},
+  "priorities": {"t1": 1, "t2": 0},
+  "delays":     {"t1": {"p2": 4}},
+  "options":    {"sequence": ["t1", "t2"], "parallel": false, "max_steps": 1000}
 }
 ```
+Эталонная сеть 6×5 — полный пример в `POST /parse` раунда 1; расширенные поля — только у сетей соответствующего типа.
 
-Response (201):
+### 4.2 LSS — спецификация системы (вход для TASK-LSS-NN)
 
 ```json
 {
-  "initial_marking": [7, 4, 2, 5, 4, 3],
-  "places": ["p1", "p2", "p3", "p4", "p5", "p6"],
-  "session_id": "00000000000000000000000000000001",
-  "transitions": ["t1", "t2", "t3", "t4", "t5"]
+  "kind": "ode",
+  "a": [1, 0, 1],
+  "rhs": [{"type": "poly", "coeffs": [2, 3, 1]}],
+  "ics": [0, 0]
 }
 ```
+- `kind`: `"ode"` (ОДУ+НУ, М4) | `"impulse"` (весовая, М2/М3) | `"transfer"`
+  (Φ(s), М1) | `"freq"` (АЧХ/ФЧХ, М8) | `"link"` (стандартное звено: `name` + `params`) |
+  `"statespace"` (М11/М7).
+- `a` — коэффициенты ЛЕВОЙ части по производным y ОТ СТАРШЕЙ к младшей
+  (y″+y → `[1,0,1]`); `b` — правая часть через производные входа x (для `ode`
+  не нужен — задаётся `rhs`).
+- `rhs` — список слагаемых: `{"type":"poly","coeffs":[...]}` (от старшей степени),
+  `{"type":"exp","alpha":-2}` (e^{−2t}), `{"type":"sin"|"cos","w":2}`;
+  для `impulse`/`transfer` — `{"type":"delta"}`. `ics` — [y(0), y′(0), …];
+  избыточные НУ методички (LSS-01…03) принимаются с примечанием в notes.
+- Другие виды: `"impulse"` — `{"kind":"impulse","a":[1,5]}` (ẏ+5y=x →
+  g=e^{−5(t−τ)}); `"link"` — `{"kind":"link","name":"aperiodic","params":{"T":"T","k":"k"}}`;
+  `"statespace"` — `{"kind":"statespace","F":[[0,1],[-2,-3]],"B":[[0],[1]],
+  "C":[[2,1]],"D":[[0]],"ics":{"y0":1,"y0p":1}}` (TASK-LSS-23).
 
-**`POST /graph`** — request (`mode` omitted → `auto`) and response (200):
+### 4.3 FA — автомат и слово (вход для TASK-FA-NN)
 
 ```json
 {
-  "session_id": "00000000000000000000000000000001"
+  "kind": "simulate",
+  "type": "moore",
+  "input": {"P": ["p1", "p2"], "W": ["w0", "w1"],
+            "S": ["s0", "s1", "s2", "s3"], "s0": "s0",
+            "phi": [["s0","p1","s0"],["s0","p2","s1"],["s1","p1","s2"],["s1","p2","s3"],
+                    ["s2","p1","s2"],["s2","p2","s3"],["s3","p1","s3"],["s3","p2","s0"]],
+            "psi": {"s0": "w0", "s1": "w1", "s2": "w0", "s3": "w0"}},
+  "word": ["p1", "p2", "p2", "p1", "p2"]
 }
 ```
+- `kind`: `"normalize"` | `"simulate"` | `"compare"` (`input` + `input2`) | `"to_mealy"`.
+- `type`: `"none"` (нет W, ψ) | `"moore"` (`psi: {si: wi}`) |
+  `"mealy"` (`psi: [{"state": si, "on": pj, "out": wk}]`).
+- `phi` — в любом из 3 способов: перечисление — тройки `[si, pj, sk]`;
+  таблица — `{"table": [[...]]}`; граф — `{"graph": {"nodes": [...], "edges":
+  [[si, pj, sk]]}}` (Мили/Мура — + метки выходов). Неполный φ — 422 (автомат полный).
+- Нормализованный отчёт — все три способа, независимо от способа ввода.
+
+## 5. Примеры отчётов решателей (JSON)
+
+### 5.1 TASK-PN-05 (эталонная сеть 6×5; методы М2, М3, М7)
 
 ```json
 {
-  "capped": false,
-  "edge_count": 4983,
-  "kind": "graph",
-  "node_count": 1503,
-  "structure": {
-    "edges": [
-      ["n0", "t1", "n1"],
-      ["n0", "t2", "n2"],
-      ["n0", "t3", "n3"]
-    ],
-    "nodes": [
-      ["n0", [7, 4, 2, 5, 4, 3]],
-      ["n1", [5, 5, 2, 5, 4, 3]],
-      ["n2", [6, 4, 4, 5, 4, 2]]
-    ]
-  }
-}
-```
-
-The example abbreviates `structure` to the first three nodes/edges; the real
-response carries all 1503 nodes and 4983 edges in deterministic (BFS
-discovery) order (ADR-0002). Node shape: `[id, marking-tuple]` with string id
-`"n<index>"` (0-based discovery index); edge shape: `[src_id, transition,
-dst_id]` (edge identifier `"n<src>:t<n<dst>"` is internal). The structure is
-also stored on the session (ADR-0005) and reused by `/properties`, `/goto`,
-and the CSV export.
-
-**`POST /fire`** — request (fire `t1` at µ0) and response (200, D-014):
-
-```json
-{
-  "action": "fire",
-  "session_id": "00000000000000000000000000000001",
-  "transition": "t1"
-}
-```
-
-```json
-{
-  "active_transitions": ["t1", "t2", "t3", "t4", "t5"],
-  "current_marking": [5, 5, 2, 5, 4, 3],
-  "history_tail": [
-    {
-      "from": [7, 4, 2, 5, 4, 3],
-      "to": [5, 5, 2, 5, 4, 3],
-      "transition": "t1"
-    }
-  ]
-}
-```
-
-**`POST /goto`** — request (switch to the first `t3` child of µ0) and
-response (200); a goto is recorded in the history with `transition: null`:
-
-```json
-{
-  "marking": [7, 3, 2, 8, 4, 3],
-  "session_id": "00000000000000000000000000000001"
-}
-```
-
-```json
-{
-  "active_transitions": ["t1", "t2", "t3", "t4", "t5"],
-  "current_marking": [7, 3, 2, 8, 4, 3],
-  "history_tail": [
-    {
-      "from": [7, 4, 2, 5, 4, 3],
-      "to": [7, 3, 2, 8, 4, 3],
-      "transition": null
-    }
-  ]
-}
-```
-
-**Error body** — 404 for any state/session op on a deleted or unknown id:
-
-```json
-{
-  "error": {
-    "code": "unknown_session",
-    "message": "session '000000000000000000000000000000ff' not found"
-  }
-}
-```
-
-## Sample properties report (smoke net)
-
-`POST /properties` (and `GET /sessions/{id}/export/report`) for the task
-fixture (REQUIREMENTS §5.1) returns this report — frozen numbers
-D-009…D-013, keys sorted, `deadlocks` in lexicographic (tuple-sorted) order
-(canonical order fixed by D-022). The `queries` block is present only when
-the request carried queries; the example shows the FR-010 fixture answers.
-
-```json
-{
-  "approximation": null,
-  "bounded": true,
-  "dead_transitions": [],
-  "deadlock_free": false,
-  "deadlocks": [
-    [0, 0, 0, 0, 1, 10],
-    [0, 0, 1, 5, 0, 9],
-    [0, 0, 2, 17, 1, 6],
-    [0, 0, 3, 7, 1, 7],
-    [0, 0, 3, 22, 0, 5],
-    [0, 0, 4, 12, 0, 6],
-    [0, 0, 5, 2, 0, 7],
-    [0, 0, 5, 24, 1, 3],
-    [0, 0, 6, 14, 1, 4],
-    [0, 0, 6, 29, 0, 2],
-    [0, 0, 7, 4, 1, 5],
-    [0, 0, 7, 19, 0, 3],
-    [0, 0, 8, 9, 0, 4],
-    [0, 0, 9, 21, 1, 1],
-    [0, 0, 10, 11, 1, 2],
-    [0, 0, 10, 26, 0, 0],
-    [0, 0, 11, 1, 1, 3],
-    [0, 0, 11, 16, 0, 1],
-    [0, 0, 12, 6, 0, 2],
-    [0, 0, 14, 8, 1, 0],
-    [0, 0, 16, 3, 0, 0],
-    [1, 0, 11, 18, 1, 0],
-    [1, 0, 13, 13, 0, 0]
+  "task_id": "TASK-PN-05",
+  "given": {"net": "S = (P, T, I, O, µ), P = {p1..p6}, T = {t1..t5}, µ = (7,4,2,5,4,3)",
+            "sequence": ["t1", "t2", "t3", "t4", "t5"]},
+  "find": ["какие переходы разрешены в начальный момент времени",
+           "маркировка после однократного последовательного срабатывания переходов"],
+  "solution": [
+    {"step": 1, "title": "Разрешённость в начальный момент",
+     "text": "w⁻(t1)=(2,0,0,0,0,0) ≤ µ; w⁻(t2)=(1,0,0,0,0,1) ≤ µ; w⁻(t3)=(0,1,0,0,0,0) ≤ µ; w⁻(t4)=(0,1,1,2,0,0) ≤ µ; w⁻(t5)=(0,0,0,0,2,0) ≤ µ — разрешены все t1–t5"},
+    {"step": 2, "title": "Цепочка срабатываний",
+     "text": "(7,4,2,5,4,3) →t1→ (5,5,2,5,4,3) →t2→ (4,5,4,5,4,2) →t3→ (4,4,4,8,4,2) →t4→ (4,3,3,6,5,3) →t5→ (5,3,4,6,3,3)"},
+    {"step": 3, "title": "Контроль матричным способом",
+     "text": "v(σ) = (1,1,1,1,1); µ′ = µ + W·v(σ) = (5,3,4,6,3,3) — совпадает с цепочкой",
+     "latex": "\\mu' = \\mu + W \\cdot v(\\sigma)",
+     "data": {"v": [1, 1, 1, 1, 1], "mu_prime": [5, 3, 4, 6, 3, 3]}}
   ],
-  "global_k": 29,
-  "home_state": false,
-  "liveness": {
-    "level": "L1",
-    "transitions": {
-      "t1": {"level": "L1", "occurs": true},
-      "t2": {"level": "L1", "occurs": true},
-      "t3": {"level": "L1", "occurs": true},
-      "t4": {"level": "L1", "occurs": true},
-      "t5": {"level": "L1", "occurs": true}
-    }
-  },
-  "per_place_k": {
-    "p1": 10,
-    "p2": 8,
-    "p3": 16,
-    "p4": 29,
-    "p5": 8,
-    "p6": 10
-  },
-  "queries": {
-    "is_reachable": {
-      "11,0,0,0,0,0": false,
-      "7,4,2,5,4,3": true
-    }
-  },
-  "safe": false,
-  "stats": {
-    "edge_count": 4983,
-    "node_count": 1503
-  }
+  "answer": {"enabled": ["t1", "t2", "t3", "t4", "t5"], "final_marking": [5, 3, 4, 6, 3, 3]},
+  "notes": ["на каждом шаге следующий переход разрешён — последовательность выполнима целиком"]
 }
 ```
 
-## CSV export format
+### 5.2 TASK-LSS-08 (передаточная, пример 11.1; метод М1)
 
-`GET /sessions/{id}/export/markings` returns `text/csv`:
-
-- header row = place names in declared order;
-- one row per reachable marking, values in declared place order, rows in BFS
-  discovery order (node id order — µ0 first);
-- deterministic byte-for-byte (no timestamps); smoke net = header + 1503 rows.
-
-First rows for the smoke net (µ0, then the three first BFS children of µ0
-via `t1`, `t2`, `t3` in declared transition order):
-
-```csv
-p1,p2,p3,p4,p5,p6
-7,4,2,5,4,3
-5,5,2,5,4,3
-6,4,4,5,4,2
-7,3,2,8,4,3
+```json
+{
+  "task_id": "TASK-LSS-08",
+  "given": {"ode": "y'(t) + 5y(t) = x(t)"},
+  "find": ["передаточная функция Φ(s)"],
+  "solution": [
+    {"step": 1, "title": "Показательное воздействие",
+     "text": "Пусть x(t) = e^{st}, y(t) = Φ(s)·e^{st}; подстановка и сокращение e^{st}: Φ(s)·s·e^{st} + 5·Φ(s)·e^{st} = e^{st} ⇒ Φ(s)·(s + 5) = 1"},
+    {"step": 2, "title": "Передаточная функция",
+     "text": "Φ(s) = 1/(s + 5)", "latex": "\\Phi(s) = \\dfrac{1}{s+5}", "data": {"phi_s": "1/(s+5)"}}
+  ],
+  "answer": {"phi_s": "1/(s+5)"},
+  "notes": ["система — апериодическое звено с T = 1/5, k = 1 (ср. TASK-LSS-13, п. 9)"]
+}
 ```
 
-## UI contract
+### 5.3 TASK-FA-03 (автомат Мура, моделирование слова; метод М4)
 
-Screens (brief §8): input tabs (text / json / form) → analysis view (net
-canvas + reachability canvas + properties panel + step panel) → session
-history.
+```json
+{
+  "task_id": "TASK-FA-03",
+  "given": {"type": "moore", "P": ["p1", "p2"], "W": ["w0", "w1"],
+            "S": ["s0", "s1", "s2", "s3"], "s0": "s0",
+            "phi": "s0=φ(s0,p1); s1=φ(s0,p2); s2=φ(s1,p1); s2=φ(s2,p1); s3=φ(s1,p2); s3=φ(s2,p2); s3=φ(s3,p1); s0=φ(s3,p2)",
+            "psi": {"s0": "w0", "s1": "w1", "s2": "w0", "s3": "w0"}},
+  "find": ["как автомат перерабатывает входное слово p1p2p2p1p2 (по тактам)"],
+  "solution": [
+    {"step": 1, "title": "Моделирование по автоматным тактам",
+     "text": "t0: s0 (w0* — определяется начальным состоянием, не учитывается); t1: p1 → s0, w0; t2: p2 → s1, w1; t3: p2 → s3, w0; t4: p1 → s3, w0; t5: p2 → s0, w0",
+     "data": {"ticks": [["t0","s0",null,"w0*"], ["t1","s0","p1","w0"], ["t2","s1","p2","w1"],
+                        ["t3","s3","p2","w0"], ["t4","s3","p1","w0"], ["t5","s0","p2","w0"]]}},
+    {"step": 2, "title": "Итог",
+     "text": "последовательность состояний s0→s0→s1→s3→s3→s0; выходное слово w0w1w0w0w0"}
+  ],
+  "answer": {"states": ["s0", "s0", "s1", "s3", "s3", "s0"], "outputs": ["w0", "w1", "w0", "w0", "w0"]},
+  "notes": ["w0* в t0 не входит в выходное слово: в автомате Мура выход считывается по текущему состоянию до первого входного символа"]
+}
+```
 
-Call sequence per user action:
+## 6. Ограничения и риски
 
-- tab submit → `POST /parse`, then `POST /graph`, then `POST /properties`
-  (sequential, with progress states);
-- reachability-graph node click → `POST /goto {session_id, marking}` (the
-  marking must be a node of the stored graph);
-- step / undo / reset → `POST /fire {action: fire|undo|reset}`;
-- exports: PNG client-side (Cytoscape export of the active canvas), report
-  JSON / markings CSV via browser download of the two export endpoints;
-- session history → `GET /sessions` (selecting a session restores the stored
-  model/graph/report without recomputation, FR-022).
+| # | Ограничение / риск | Обработка |
+|---|---|---|
+| 1 | Кап достижимости `REACH_MAX_MARKINGS` (50000) | без изменений: 413 `cap_exceeded` + предложение coverability; симуляции решателей — свой кап `SOLVER_MAX_STEPS = 1000` (413) |
+| 2 | Кэрп–Миллер на ОГРАНИЧЕННЫХ сетях взрывается (D-034: 1.9M узлов за 20 с) | тот же кап; режим `auto` строит только граф |
+| 3 | Временные (τ) и цветные сети — полное построение графа невозможно (состояние = маркировка × время/значения) | `build` → 422 `unsupported_model`; анализ — пошаговая симуляция `solvers_pn` с горизонтом; **цветные сети — scope A-21**: только примеры PN-36/37 (симуляция значений/гвардов), без классификации и достижимости |
+| 4 | Производительность sympy: точные вычисления с символьными параметрами растут с порядком | порядок ОДУ ≤ 6, таймаут 30 с → 500 `solver_failed` с примечанием; 11 стандартных звеньев — из таблицы `links.py`; повторные вызовы с тем же `spec` — кэш на процесс |
+| 5 | PN-02 «достроить сеть» — задача синтеза (ответ не единственен) | режим модификации сессии: отчёт содержит КАНДИДАТ-сеть (полный JSON) + проверку на ней; пользователь принимает кандидата (UI: «загрузить в сессию») или правит сеть вручную; отчёт честно помечает, что решение — предложение |
+| 6 | API раунда 1 ломается (D-041) | внешнего потребителя нет (единый `main`); контракт фиксируют e2e раунда 2 и примеры §4–5; неизменённые эндпоинты сохраняют форму |
+| 7 | Расхождение терминологии (GAP §5) | UI/отчёты — глоссарий методички (§2.4); имена полей API (JSON-контракт) не переводятся, русские подписи — слой UI |
+| 8 | KaTeX в базовой сборке — лишний вес/риск | формулы рендерятся HTML+sub/sup по `Step.text`; поле `latex` зарезервировано, рендерер — опция без блокавания |
+| 9 | Опечатки источников методички (§9 MATERIALS_ANALYSIS: избыточные НУ в LSS-01…03, двойная пара (s0,p2) в FA-04 и т.д.) | эталоны — канонические чтения, зафиксированные в карточках и ASSUMPTIONS; расхождения помечаются в `notes` отчёта |
+| 10 | Объём Фазы 4.5 (два новых математических модуля) — максимальный риск срыва (GAP §6) | порядок работ D-047: properties → расширенные модели → solvers (PN-отчёты первыми — кратчайший путь к «сквозному» экрану) → LSS/FA → api → UI; при необходимости LSS/FA — в бэклог (A-17) без потери PN-функциональности |
 
-Cytoscape data shapes:
-
-- net canvas: node `data {kind: "place"|"transition", label, tokens}`
-  (`tokens` on places only, = current marking); edge
-  `data {weight, source, target}`;
-- graph canvas: node `data {marking: [int, ...], deadlock: bool}`; edge
-  `data {transition}`.
-
-Loading and error states:
-
-- any API error → toast with the error `message` (`details` included when
-  present);
-- graph build longer than 2 s → progress indicator until `POST /graph`
-  resolves; a 413 `cap_exceeded` additionally offers the switch to
-  `coverability` mode (NFR-002 c3).
+Самопроверка: эталоны §8 MATERIALS_ANALYSIS воспроизводятся `POST /solve` (71
+карточка; LSS-01…05/14/15, PN-02…09/19/21 — эталоны Фазы 5, независимо); e2e
+«Задание из практикума»: PN-05, LSS-08, FA-03 → отчёты §5; якоря раунда 1
+(D-009…D-014, D-035) зелёны; console чистый; PNG-экспорт работает.
