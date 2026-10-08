@@ -57,6 +57,30 @@ class CapExceededError(PetriNetError):
         return f"reachability cap exceeded: more than {self.limit} markings"
 
 
+class ConflictError(PetriNetError):
+    """Parallel firing is impossible: a disabled transition or a conflict.
+
+    ``transitions`` of length 1 — that transition is not enabled at the
+    marking; a pair — they conflict (share the input place ``place``).
+    Example: ConflictError(("t1", "t2"), "p1").
+    """
+
+    transitions: tuple[str, ...]
+    place: str | None
+
+    def __init__(self, transitions: tuple[str, ...], place: str | None = None) -> None:
+        self.transitions = transitions
+        self.place = place
+
+    def __str__(self) -> str:
+        if len(self.transitions) == 1:
+            return f"конфликт: переход '{self.transitions[0]}' не разрешён в данной маркировке"
+        names = " и ".join(f"'{t}'" for t in self.transitions)
+        if self.place is None:
+            return f"конфликт: переходы {names} не могут сработать одновременно"
+        return f"конфликт: переходы {names} имеют общую входную позицию '{self.place}'"
+
+
 class TransitionNotEnabledError(PetriNetError):
     """Not enabled at marking. Example: TransitionNotEnabledError((1, 0), 't4')."""
 

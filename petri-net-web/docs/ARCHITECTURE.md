@@ -71,11 +71,11 @@ class PetriNet:                          # v2 — расширяет модел�
     transitions: tuple[str, ...]
     inputs: tuple[tuple[ArcWeight, ...], ...]    # I(t): [(p, w)]
     outputs: tuple[tuple[ArcWeight, ...], ...]   # O(t): [(p, w)]
-    inhibitors: tuple[tuple[str, ...], ...]      # ⊣(t): [p], вес ингибитора всегда 1
-    priorities: tuple[int, ...] | None           # Pr t по переходам; None — нет
-    delays: tuple[tuple[ArcWeight, ...], ...]    # τ на ВЫХОДНЫХ дугах (p, τ), τ ≥ 1
-    colors: Colors | None                            # None — классическая сеть
     initial_marking: Marking
+    inhibitors: tuple[tuple[str, ...], ...] | None = None  # ⊣(t): [p], вес ингибитора всегда 1
+    priorities: tuple[int, ...] | None = None              # Pr t по переходам; None — нет
+    delays: tuple[tuple[ArcWeight, ...], ...] | None = None # τ на ВЫХОДНЫХ дугах (p, τ), τ ≥ 1
+    colors: Colors | None = None                           # None — классическая сеть
 ```
 
 Публичный API (методы + эквивалентные свободные функции, как в раунде 1):
@@ -87,7 +87,7 @@ class PetriNet:                          # v2 — расширяет модел�
 | `fire_set(net, m, ts)` | маркировка, подмножество | Marking | параллельное срабатывание: все ts разрешены и попарно не конфликтуют (нет общей входной позиции — глоссарий «конфликт»); иначе `ConflictError` |
 | `active(net, m, *, usable=None)` | маркировка | list[str] | разрешённые переходы в порядке объявления; с `priorities` — в каждой конфликтной группе только максимум Pr t |
 | `incidence(net)` | — | (W−, W+, W) n×m | матричный способ (М7): `W = W+ − W−` |
-| `minimal_marking(net, *, parallel=False)` | — | Marking | М6: покомпонентный максимум требований I(t); `parallel=True` — сумма требований конфликтующих (PN-07: t1+t2 → (3,3,0)) |
+| `minimal_marking(net, *, parallel=False)` | — | Marking | М6: покомпонентный максимум требований I(t) по всем переходам; `parallel=True` — сумма требований ВСЕХ переходов (worst case «все должны быть разрешены одновременно»; PN-07: t1+t2 → (3,3,0)) |
 
 - Совместимость: при `inhibitors == priorities == delays == colors == None`
   поведение идентично раунду 1 (якоря D-009…D-014, D-035 сохраняются).
