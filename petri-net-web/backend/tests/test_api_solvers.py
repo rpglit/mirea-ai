@@ -137,12 +137,26 @@ def test_catalog_full_and_filtered(client: TestClient) -> None:
     for row in rows:
         groups[str(row["group"])] = groups.get(str(row["group"]), 0) + 1
     assert groups == {"PN": 40, "LSS": 23, "FA": 8}
-    assert set(rows[0]) == {"task_id", "group", "title", "source", "type", "input_kind"}
+    assert set(rows[0]) == {"task_id", "group", "title", "source", "type", "input_kind", "prefill"}
 
     assert len(cast("list[object]", client.get("/catalog?group=PN").json())) == 40
     assert len(cast("list[object]", client.get("/catalog?group=LSS").json())) == 23
     assert len(cast("list[object]", client.get("/catalog?group=FA").json())) == 8
     assert client.get("/catalog?group=XX").status_code == 422
+
+
+def test_catalog_prefill(client: TestClient) -> None:
+    rows = {
+        str(row["task_id"]): cast("dict[str, object]", row)
+        for row in cast("list[object]", client.get("/catalog").json())
+    }
+    pn05_prefill = cast("dict[str, object]", rows["TASK-PN-05"]["prefill"])
+    assert isinstance(pn05_prefill["net"], dict) and pn05_prefill["net"]
+    assert cast("list[object]", pn05_prefill["sequence"]) == ["t1", "t2", "t3", "t4", "t5"]
+    lss08_prefill = cast("dict[str, object]", rows["TASK-LSS-08"]["prefill"])
+    assert lss08_prefill["kind"] == "transfer"
+    fa03_prefill = cast("dict[str, object]", rows["TASK-FA-03"]["prefill"])
+    assert fa03_prefill["kind"] == "simulate"
 
 
 # --- POST /matrices and /minimal-marking ------------------------------------------------

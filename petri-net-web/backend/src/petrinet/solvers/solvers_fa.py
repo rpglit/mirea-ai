@@ -351,6 +351,7 @@ def solve_fa(task_id: str, spec: dict[str, Any]) -> Report:
         answer = {"states": r["states"]}
         if r["output_word"]:
             answer["output_word"] = r["output_word"]
+        answer["graph"] = to_graph(automaton)
         if automaton.kind == "moore":
             notes.append(
                 "w* в t0 не входит в выходное слово (определяется начальным состоянием)."
@@ -375,6 +376,8 @@ def solve_fa(task_id: str, spec: dict[str, Any]) -> Report:
                 "data": {"r1": cmp["r1"], "r2": cmp["r2"]},
             }
         )
+        cmp["r1"]["graph"] = to_graph(a1)
+        cmp["r2"]["graph"] = to_graph(a2)
         answer = {"r1": cmp["r1"], "r2": cmp["r2"], "equal": cmp["equal"]}
 
     elif kind == "to_mealy" and automaton is not None:

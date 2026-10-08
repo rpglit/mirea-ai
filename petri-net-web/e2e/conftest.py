@@ -52,8 +52,21 @@ def browser():
 @pytest.fixture
 def page(browser):
     new_page = browser.new_page(viewport={"width": 1400, "height": 900})
+    console_problems: list[str] = []
+    new_page.on(
+        "console",
+        lambda msg: console_problems.append(f"{msg.type}: {msg.text}")
+        if msg.type in ("error", "warning")
+        else None,
+    )
+    new_page.on("pageerror", lambda exc: console_problems.append(f"pageerror: {exc}"))
     yield new_page
     new_page.close()
+    # NFR-107: console «чистый» — 0 JS-ошибок и 0 warning во всех сценариях
+    if console_problems:
+        raise AssertionError(
+            "console не чистый (NFR-107):\n" + "\n".join(console_problems[:20])
+        )
 
 
 def analyze_via_text(page: Page) -> None:

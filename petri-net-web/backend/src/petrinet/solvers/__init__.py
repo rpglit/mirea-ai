@@ -24,7 +24,7 @@ from petrinet.solvers.solvers_pn import solve_pn
 from petrinet.solvers.solvers_pn_ext import REGISTRY as PN_EXT_REGISTRY
 from petrinet.solvers.solvers_pn_ext import solve_pn_ext
 
-__all__ = ["CATALOG", "SolveFn", "TaskInfo", "Report", "catalog", "solve"]
+__all__ = ["CATALOG", "SolveFn", "TaskInfo", "Report", "catalog", "prefill", "solve"]
 
 CATALOG: list[TaskInfo] = PN_REGISTRY + PN_EXT_REGISTRY + LSS_REGISTRY + FA_REGISTRY
 
@@ -73,6 +73,53 @@ def catalog(group: str | None = None) -> list[TaskInfo]:
     if group not in ("PN", "LSS", "FA"):
         raise UnknownTaskError(f"group:{group}")
     return [t for t in CATALOG if t.group == group]
+
+
+def prefill(task_id: str) -> dict[str, Any] | None:
+    """Return the methodic default data of a catalog task, or ``None``.
+
+    The UI pre-fills the task form with these values (FR-332); solving the
+    task with an empty ``data`` payload yields the same report.
+    """
+    info = _BY_ID.get(task_id)
+    if info is None:
+        return None
+    if info.group == "PN":
+        from petrinet.solvers.templates_pn import TASKS
+
+        spec = TASKS.get(task_id)
+        if spec is None or spec.net is None:
+            return None
+        data: dict[str, Any] = {"net": json.loads(json.dumps(spec.net))}
+        for key in ("sequence", "sequences", "parallel", "count_transition", "from_mu_min"):
+            if key in spec.options:
+                data[key] = json.loads(json.dumps(spec.options[key]))
+        return data
+    if info.group == "LSS":
+        from petrinet.solvers.solvers_lss import _TASKS
+
+        entry = _TASKS.get(task_id)
+        return _jsonable(entry["spec"]) if entry else None
+    from petrinet.solvers.solvers_fa import FA_DEFAULTS
+
+    entry = FA_DEFAULTS.get(task_id)
+    return _jsonable(entry) if entry else None
+
+
+def _jsonable(value: Any) -> Any:
+    """Deep-copy ``value`` into JSON-serializable form (sympy Rational -> "p/q")."""
+    if isinstance(value, dict):
+        return {str(k): _jsonable(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_jsonable(v) for v in value]
+    try:
+        from sympy import Rational
+
+        if isinstance(value, Rational):
+            return str(value)
+    except ImportError:
+        pass
+    return value
 
 
 def solve(task_id: str, data: dict[str, Any] | None = None) -> Report:

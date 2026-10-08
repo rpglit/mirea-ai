@@ -35,11 +35,11 @@ def test_e2e1_text_intake_full_analysis(page: Page) -> None:
 
 
 def test_e2e2_stepping(page: Page) -> None:
-    """E2E-2: stepping (step / undo / reset)."""
+    """E2E-2: one-click firing, undo, reset, clickable history (BUG-5/6)."""
     analyze_via_text(page)
     assert page.locator("#active-list .btn-transition").count() == 5
+    # one click on the transition fires it (FR-401, BUG-5)
     page.locator("#active-list .btn-transition", has_text="t1").click()
-    page.click("#btn-step")
     wait_net_label(page, "p1 (5)")
     labels = net_labels(page)
     assert "p1 (5)" in labels
@@ -49,7 +49,11 @@ def test_e2e2_stepping(page: Page) -> None:
     labels = net_labels(page)
     assert "p1 (7)" in labels
     assert "p2 (4)" in labels
+    # the "Срабатывание" button fires the first enabled transition
     page.click("#btn-step")
+    wait_net_label(page, "p1 (5)")
+    # clicking the first history line restores that state (BUG-6)
+    page.locator("#history-list .history-line").first.click()
     wait_net_label(page, "p1 (5)")
     page.click("#btn-reset")
     page.wait_for_function(
@@ -106,3 +110,80 @@ def test_e2e5_session_history(page: Page) -> None:
     assert graph_node_count(page) == 1503
     props = props_text(page)
     assert "29" in props
+
+
+def test_e2e6_task_picker_solve_pn(page: Page) -> None:
+    """E2E-6: «Задание из практикума» — каталог, prefill, solve, отчёт (FR-331..333)."""
+    page.goto(BASE_URL)
+    page.click("button:has-text('Задание из практикума')")
+    page.wait_for_selector(".task-card")
+    assert page.locator(".task-card").count() == 71
+    page.click("button.tab:has-text('Сети Петри')")
+    page.wait_for_selector(".task-card")
+    assert page.locator(".task-card").count() == 40
+    card = page.locator(".task-card", has_text="TASK-PN-05").first
+    card.locator("button", has_text="Решить").click()
+    page.wait_for_selector("#task-data")
+    data = page.input_value("#task-data")
+    assert "initial_marking" in data
+    page.locator(".solver button.primary", has_text="Решить").click()
+    page.wait_for_selector(".report")
+    report_text = page.inner_text(".report")
+    assert "Дано" in report_text
+    assert "Найти" in report_text
+    assert "Решение" in report_text
+    assert "Ответ" in report_text
+    assert "(5,3,4,6,3,3)" in report_text
+    page.screenshot(path=str(SCREENSHOTS_DIR / "e2e-6-solve-pn.png"), full_page=True)
+
+
+def test_e2e7_fa_solve_automaton_graph(page: Page) -> None:
+    """E2E-7: FA-03 — граф автомата, прохождение слова по тактам (FR-501)."""
+    page.goto(BASE_URL)
+    page.click("button:has-text('Задание из практикума')")
+    page.wait_for_selector(".task-card")
+    page.locator(".task-card", has_text="TASK-FA-03").first.locator(
+        "button", has_text="Решить"
+    ).click()
+    page.wait_for_selector("#task-data")
+    page.locator(".solver button.primary", has_text="Решить").click()
+    page.wait_for_selector(".report .canvas")
+    assert (
+        page.evaluate("() => (window.Registry.automaton ? window.Registry.automaton.$('node').length : 0)")
+        == 4
+    )
+    report_text = page.inner_text(".report")
+    assert "w0" in report_text and "s3" in report_text
+    # по тактам: слово p1 p2 p2 p1 p2 -> s0 s0 s1 s3 s3 s0
+    page.click("button:has-text('Показать прохождение')")
+    assert (
+        page.evaluate("() => (window.Registry.automaton ? window.Registry.automaton.$('node.path-current').length : 0)")
+        == 1
+    )
+    page.click("button:has-text('Следующий такт')")
+    page.click("button:has-text('Показать весь путь')")
+    assert (
+        page.evaluate("() => (window.Registry.automaton ? window.Registry.automaton.$('node.path-state').length : 0)")
+        == 3
+    )
+    page.screenshot(path=str(SCREENSHOTS_DIR / "e2e-7-fa-graph.png"), full_page=True)
+
+
+def test_e2e8_png_exports(page: Page) -> None:
+    """E2E-8: PNG-экспорт сети и графа (BUG-1, FR-405/FR-503)."""
+    analyze_via_text(page)
+    page.click("#canvas-net")
+    with page.expect_download() as png_info:
+        page.click("#btn-export-png")
+    blob = Path(png_info.value.path()).read_bytes()
+    assert blob[:8] == b"\x89PNG\r\n\x1a\n"
+    assert len(blob) > 1000
+    page.click("#canvas-graph")
+    with page.expect_download() as png_info2:
+        page.click("#btn-export-png")
+    blob2 = Path(png_info2.value.path()).read_bytes()
+    assert blob2[:8] == b"\x89PNG\r\n\x1a\n"
+    with page.expect_download() as all_info:
+        page.click("#btn-export-all-png")
+    blob3 = Path(all_info.value.path()).read_bytes()
+    assert blob3[:8] == b"\x89PNG\r\n\x1a\n"

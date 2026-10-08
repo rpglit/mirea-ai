@@ -1,4 +1,4 @@
-/* Сети Петри — минимальная светлая тема (NFR-007) */
+/* Сети Петри — светлая тема, раунд 2 (Vue 3) */
 
 * {
   box-sizing: border-box;
@@ -7,7 +7,7 @@
 body {
   margin: 0 auto;
   padding: 16px;
-  max-width: 1200px;
+  max-width: 1280px;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   font-size: 15px;
   line-height: 1.4;
@@ -27,14 +27,26 @@ h1 {
   font-size: 1.5rem;
 }
 
-#session-badge {
-  font-size: 0.9em;
-  color: #555;
-}
-
 h3 {
   margin: 0 0 8px;
   font-size: 1.05rem;
+}
+
+h4 {
+  margin: 14px 0 6px;
+  font-size: 1rem;
+}
+
+#session-badge {
+  font-size: 0.9em;
+  color: #555;
+  font-weight: 600;
+}
+
+/* Переключатель видов */
+.view-tabs {
+  display: flex;
+  gap: 8px;
 }
 
 /* Вкладки ввода */
@@ -59,17 +71,10 @@ h3 {
   color: #fff;
 }
 
-/* Панели ввода: видна только активная */
-.input-panel {
-  display: none;
-}
-
-.input-panel.active {
-  display: block;
-}
-
 .input-panel label,
-#query-row label {
+#query-row label,
+.solver label,
+.task-form label {
   display: block;
   margin: 10px 0 4px;
   font-weight: 600;
@@ -85,37 +90,36 @@ textarea {
   resize: vertical;
 }
 
-input {
+input,
+select {
   padding: 6px 8px;
   border: 1px solid #ccc;
   border-radius: 6px;
   font-size: 0.95em;
   font-family: inherit;
+  background: #fff;
 }
 
 input[type="number"] {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
-#panel-form input {
+.form-field input {
   width: 100%;
   max-width: 480px;
 }
 
-#panel-form label {
-  margin-top: 12px;
-}
-
-/* Строки дуг (строится JS-модулем) */
+/* Строки дуг */
 .arc-row {
   display: flex;
   align-items: center;
   gap: 8px;
   margin: 6px 0;
+  flex-wrap: wrap;
 }
 
 .arc-direction {
-  max-width: 240px;
+  max-width: 260px;
 }
 
 .arc-source,
@@ -129,6 +133,7 @@ input[type="number"] {
 
 .arc-remove {
   color: #b00020;
+  padding: 4px 8px;
 }
 
 #btn-add-arc {
@@ -165,15 +170,11 @@ button.primary:hover:not(:disabled) {
   background: #1d4ed8;
 }
 
-#input-tabs + .input-panel,
-.input-panel {
-  margin-top: 0;
-}
-
-#panel-text .primary,
-#panel-json .primary,
-#panel-form .primary {
+.run-buttons {
+  display: flex;
+  gap: 8px;
   margin-top: 10px;
+  flex-wrap: wrap;
 }
 
 /* Строка статуса */
@@ -223,21 +224,13 @@ button.primary:hover:not(:disabled) {
 .step-buttons,
 #query-row,
 #export-row,
-#sessions-row {
+#sessions-row,
+.report-actions {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
   margin-top: 12px;
-}
-
-#build-row select {
-  padding: 6px 8px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  background: #fff;
-  font-family: inherit;
-  font-size: 0.95em;
 }
 
 #query-row label {
@@ -247,6 +240,11 @@ button.primary:hover:not(:disabled) {
 
 #query-marking {
   width: 240px;
+}
+
+.muted {
+  color: #888;
+  font-size: 0.9em;
 }
 
 /* Пошаговое проигрывание */
@@ -261,7 +259,7 @@ button.primary:hover:not(:disabled) {
   margin-bottom: 8px;
 }
 
-.transition-buttons .btn-transition {
+.btn-transition {
   padding: 4px 10px;
   border: 1px solid #ccc;
   border-radius: 4px;
@@ -271,10 +269,9 @@ button.primary:hover:not(:disabled) {
   cursor: pointer;
 }
 
-.transition-buttons .btn-transition.active {
-  outline: 2px solid #2563eb;
-  outline-offset: 1px;
-  background: #eff6ff;
+.btn-transition:hover {
+  background: #e8f5e9;
+  border-color: #4caf50;
 }
 
 .history {
@@ -289,25 +286,58 @@ button.primary:hover:not(:disabled) {
   background: #fafafa;
 }
 
-/* Панель свойств */
+.history-line {
+  padding: 2px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.history-line:hover {
+  background: #e3f2fd;
+}
+
+/* Панель свойств (BUG-4): таблица «Свойство → Значение → Пояснение» */
 #props-panel {
   margin-top: 16px;
 }
 
-dl#props {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 2px 12px;
-  margin: 0;
+.props-table {
+  width: 100%;
+  border-collapse: collapse;
 }
 
-dl#props dt {
-  font-weight: bold;
+.props-table th,
+.props-table td {
+  border: 1px solid #e0e0e0;
+  padding: 5px 8px;
+  text-align: left;
+  vertical-align: top;
+  font-size: 0.92em;
 }
 
-dl#props dd {
-  margin: 0;
+.props-table th {
+  background: #f5f7fa;
+}
+
+.props-table td.props-name {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.props-table td.props-value {
+  white-space: pre-wrap;
   overflow-wrap: anywhere;
+  min-width: 160px;
+}
+
+.props-table td.props-note {
+  color: #666;
+  font-size: 0.92em;
+}
+
+.props-table details summary {
+  cursor: pointer;
+  color: #2563eb;
 }
 
 .caveat {
@@ -339,6 +369,42 @@ dl#props dd {
   border-bottom: 1px solid #eee;
 }
 
+.session-item {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  flex-wrap: wrap;
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  text-align: left;
+}
+
+.session-item:hover {
+  background: #e3f2fd;
+}
+
+.session-item.current .session-name {
+  font-weight: 700;
+}
+
+.session-name {
+  max-width: 380px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-date {
+  color: #888;
+  font-size: 0.85em;
+}
+
+.session-remove {
+  color: #b00020;
+  padding: 2px 8px;
+}
+
 /* Тосты */
 .toast {
   position: fixed;
@@ -348,7 +414,8 @@ dl#props dd {
   color: #fff;
   padding: 10px 14px;
   border-radius: 6px;
-  max-width: 420px;
+  max-width: 460px;
+  z-index: 100;
 }
 
 .toast.error {
@@ -357,4 +424,127 @@ dl#props dd {
 
 .hidden {
   display: none !important;
+}
+
+/* Экран «Задание из практикума» */
+.home {
+  margin-top: 12px;
+}
+
+.catalog-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.task-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 10px;
+  max-height: 60vh;
+  overflow: auto;
+  padding: 4px;
+  border: 1px solid #eee;
+  border-radius: 6px;
+}
+
+.task-card {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 10px;
+  background: #fafbfc;
+}
+
+.task-card.selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.task-card h3 {
+  margin: 0 0 4px;
+  font-size: 0.98em;
+}
+
+.task-card .task-meta {
+  color: #777;
+  font-size: 0.85em;
+  margin: 0 0 8px;
+}
+
+.task-card button {
+  float: right;
+}
+
+.solver {
+  margin-top: 16px;
+  border-top: 2px solid #e0e0e0;
+  padding-top: 8px;
+}
+
+/* Отчёт решателя: Дано / Найти / Решение / Ответ */
+.report {
+  margin-top: 12px;
+}
+
+.report .given-dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 12px;
+  margin: 0;
+}
+
+.report .given-dl dt {
+  font-weight: 600;
+}
+
+.report .given-dl dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.formula,
+.step-text {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+  background: #f6f8fa;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  padding: 8px;
+  margin: 6px 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.report table.data-table {
+  border-collapse: collapse;
+  margin: 6px 0;
+}
+
+.report table.data-table th,
+.report table.data-table td {
+  border: 1px solid #ddd;
+  padding: 3px 8px;
+  font-size: 0.88em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.report table.data-table th {
+  background: #f5f7fa;
+}
+
+.answer-block {
+  margin: 8px 0;
+}
+
+.answer-block .answer-key {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.tick-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
 }

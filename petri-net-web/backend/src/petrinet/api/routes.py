@@ -437,7 +437,7 @@ async def solve_task(body: SolveRequest) -> dict[str, object]:
 
 
 @router.get("/catalog")
-def catalog_endpoint(group: str | None = None) -> list[dict[str, str]]:
+def catalog_endpoint(group: str | None = None) -> list[dict[str, object]]:
     """Return the solver catalog, optionally filtered by group (PN/LSS/FA).
 
     Response (200), 71 entries without a filter:
@@ -446,12 +446,16 @@ def catalog_endpoint(group: str | None = None) -> list[dict[str, str]]:
             {
                 "group": "PN",
                 "input_kind": "pn",
+                "prefill": {"net": {...}, "sequence": ["t1", "t2", "t3", "t4", "t5"]},
                 "source": "семинар 2, стр. 1, Задание 1",
                 "task_id": "TASK-PN-05",
                 "title": "Эталонная сеть 6×5 (µ=(7,4,2,5,4,3))",
                 "type": "задание"
             }
         ]
+
+    ``prefill`` — the methodic default data for the task form (FR-332);
+    ``null`` when the task has no built-in data.
 
     Errors: 422 ``unknown_task`` (unknown group).
     """
@@ -463,6 +467,7 @@ def catalog_endpoint(group: str | None = None) -> list[dict[str, str]]:
             "source": t.source,
             "type": t.type,
             "input_kind": t.input_kind,
+            "prefill": solvers.prefill(t.task_id),
         }
         for t in solvers.catalog(group)
     ]
