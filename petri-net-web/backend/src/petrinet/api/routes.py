@@ -3,16 +3,23 @@
 from __future__ import annotations
 
 import json
+import signal
+import threading
 from typing import Literal, cast
 
 from fastapi import APIRouter, Response
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from petrinet import parser
+from petrinet import parser, solvers
 from petrinet.config import Settings, get_settings
-from petrinet.core import Marking, PetriNet
-from petrinet.errors import TransitionNotEnabledError, UnknownSessionError, ValidationError
-from petrinet.properties import Report, analyze, is_coverable, is_reachable
+from petrinet.core import Marking, PetriNet, minimal_marking
+from petrinet.errors import (
+    TransitionNotEnabledError,
+    UnknownSessionError,
+    UnsupportedModelError,
+    ValidationError,
+)
+from petrinet.properties import Report, analyze, is_coverable, is_reachable, sequence_report
 from petrinet.reachability import build
 from petrinet.storage import (
     SessionStore,
@@ -146,7 +153,7 @@ def parse(body: ParseRequest) -> dict[str, object]:
     store = get_store()
     session_id = store.create_session(body.name, body.format, model_to_json(net))
     store.set_state(session_id, json.dumps(marking_to_list(net.initial_marking)), steps_to_json([]))
-    return {
+    response: dict[str, object] = {
         "initial_marking": marking_to_list(net.initial_marking),
         "inputs": _arc_maps(net)[0],
         "outputs": _arc_maps(net)[1],
@@ -154,6 +161,27 @@ def parse(body: ParseRequest) -> dict[str, object]:
         "session_id": session_id,
         "transitions": list(net.transitions),
     }
+    if net.inhibitors is not None:
+        response["inhibitors"] = {
+            t: list(p) for t, p in zip(net.transitions, net.inhibitors, strict=True)
+        }
+    if net.priorities is not None:
+        response["priorities"] = {
+            t: pr for t, pr in zip(net.transitions, net.priorities, strict=True)
+        }
+    if net.delays is not None:
+        response["delays"] = {
+            t: [[p, tau] for p, tau in arcs]
+            for t, arcs in zip(net.transitions, net.delays, strict=True)
+            if arcs
+        }
+    if net.colors is not None:
+        response["colors"] = {
+            "initial_values": net.colors.initial_values,
+            "guards": net.colors.guards,
+            "output_exprs": net.colors.output_exprs,
+        }
+    return response
 
 
 class GraphRequest(BaseModel):
@@ -166,6 +194,17 @@ class GraphRequest(BaseModel):
 
     session_id: str
     mode: Literal["auto", "bounded", "coverability"] = "auto"
+
+
+class PropertiesWith(BaseModel):
+    """Optional additions to the /properties report (ARCH section 2.6).
+
+    Example: ``{"matrices": true, "mu_min": true, "sequence": ["t1", "t2"]}``.
+    """
+
+    matrices: bool = False
+    mu_min: bool = False
+    sequence: list[str] | None = None
 
 
 class PropertiesRequest(BaseModel):
@@ -181,6 +220,7 @@ class PropertiesRequest(BaseModel):
 
     session_id: str
     queries: dict[str, list[int] | None] | None = None
+    with_: PropertiesWith | None = Field(default=None, alias="with")
 
 
 def _report_to_dict(report: Report) -> dict[str, object]:
@@ -224,6 +264,9 @@ def _report_to_dict(report: Report) -> dict[str, object]:
         "per_place_k": report.per_place_k,
         "safe": report.safe,
         "stats": {"edge_count": report.stats["edges"], "node_count": report.stats["nodes"]},
+        "conservative": report.conservative,
+        "verdict": report.verdict,
+        "mu_min": report.mu_min,
     }
 
 
@@ -306,9 +349,23 @@ def properties(body: PropertiesRequest) -> dict[str, object]:
         )
     structure = structure_from_json(graph_json)
     net = model_from_json(cast(str, row["model_json"]))
-    report = analyze(net, structure)
+    with_ = body.with_
+    report = analyze(net, structure, with_mu_min=bool(with_ and with_.mu_min))
     store.set_report(body.session_id, json.dumps(_report_to_dict(report), sort_keys=True))
     result: dict[str, object] = _report_to_dict(report)
+    if with_ is not None:
+        if with_.matrices:
+            if net.colors is not None:
+                raise UnsupportedModelError("colors")
+            w_minus, w_plus, w = net.incidence()
+            result["matrices"] = {"W": w, "W_minus": w_minus, "W_plus": w_plus}
+        if with_.sequence is not None:
+            current = _as_marking(json.loads(cast(str, row["current_marking"])))
+            try:
+                seq_report = sequence_report(net, current, with_.sequence)
+            except ValueError as exc:
+                raise ValidationError([{"path": "with.sequence", "message": str(exc)}]) from exc
+            result["sequence"] = seq_report
     if body.queries:
         answers: dict[str, object] = {}
         for key, values in body.queries.items():
@@ -330,6 +387,138 @@ def properties(body: PropertiesRequest) -> dict[str, object]:
             answers[label] = {",".join(str(v) for v in values): answer}
         result["queries"] = {label: answers[label] for label in sorted(answers)}
     return {key: result[key] for key in sorted(result)}
+
+
+class SolveRequest(BaseModel):
+    """POST /solve request body (contract: ARCHITECTURE.md section 2.6).
+
+    Example (catalog task, no user data needed):
+
+        {"task_id": "TASK-PN-05"}
+
+    Example (custom task with a net):
+
+        {"task_id": "custom:firing", "data": {"net": {...}, "sequence": ["t1"]}}
+    """
+
+    task_id: str
+    data: dict[str, object] | None = None
+
+
+@router.post("/solve")
+async def solve_task(body: SolveRequest) -> dict[str, object]:
+    """Solve one methodic (or custom) task; respond with the Report.
+
+    Stateless: no session is required or created (ARCH section 2.6). The
+    response is the methodic report ``{task_id, given, find, solution,
+    answer, notes}`` (keys sorted). The computation is bounded by
+    ``SOLVER_TIMEOUT_S`` (30 s) via SIGALRM on the main thread (the async
+    endpoint runs there); a breach answers 500 ``solver_failed``. Errors:
+    422 ``unknown_task``, 422 ``validation_failed``, 413 ``cap_exceeded``,
+    422 ``unsupported_model``, 409 ``conflict``, 500 ``solver_failed``.
+    """
+    from petrinet.errors import SolverError
+    from petrinet.solvers import SOLVER_TIMEOUT_S
+
+    def _on_timeout(signum: int, frame: object) -> None:
+        raise SolverError(f"таймаут: вычисления превысили {SOLVER_TIMEOUT_S} с")
+
+    previous: object = None
+    if threading.current_thread() is threading.main_thread():
+        previous = signal.signal(signal.SIGALRM, _on_timeout)
+        signal.alarm(SOLVER_TIMEOUT_S)
+    try:
+        report = solvers.solve(body.task_id, body.data)
+    finally:
+        if previous is not None:
+            signal.alarm(0)
+            signal.signal(signal.SIGALRM, previous)  # type: ignore[arg-type]
+    return report.to_dict()
+
+
+@router.get("/catalog")
+def catalog_endpoint(group: str | None = None) -> list[dict[str, str]]:
+    """Return the solver catalog, optionally filtered by group (PN/LSS/FA).
+
+    Response (200), 71 entries without a filter:
+
+        [
+            {
+                "group": "PN",
+                "input_kind": "pn",
+                "source": "семинар 2, стр. 1, Задание 1",
+                "task_id": "TASK-PN-05",
+                "title": "Эталонная сеть 6×5 (µ=(7,4,2,5,4,3))",
+                "type": "задание"
+            }
+        ]
+
+    Errors: 422 ``unknown_task`` (unknown group).
+    """
+    return [
+        {
+            "task_id": t.task_id,
+            "group": t.group,
+            "title": t.title,
+            "source": t.source,
+            "type": t.type,
+            "input_kind": t.input_kind,
+        }
+        for t in solvers.catalog(group)
+    ]
+
+
+class MatricesRequest(BaseModel):
+    """POST /matrices request body. Example: ``{"session_id": "<id>"}``."""
+
+    session_id: str
+
+
+@router.post("/matrices")
+def matrices(body: MatricesRequest) -> dict[str, list[list[int]]]:
+    """Return the W−/W+/W matrices (rows = places, columns = transitions).
+
+    Errors: 404 ``unknown_session``, 422 ``unsupported_model`` (colors).
+    """
+    store = get_store()
+    row = _load_session(store, body.session_id)
+    net = model_from_json(cast(str, row["model_json"]))
+    if net.colors is not None:
+        raise UnsupportedModelError("colors")
+    w_minus, w_plus, w = net.incidence()
+    return {"W": w, "W_minus": w_minus, "W_plus": w_plus}
+
+
+class MinimalMarkingRequest(BaseModel):
+    """POST /minimal-marking request body.
+
+    Example: ``{"session_id": "<id>", "parallel": false}``.
+    """
+
+    session_id: str
+    parallel: bool = False
+
+
+@router.post("/minimal-marking")
+def minimal_marking_endpoint(body: MinimalMarkingRequest) -> dict[str, object]:
+    """Return the minimal marking (M6) and the per-transition requirements.
+
+    ``parallel`` switches to the worst-case sum of all input requirements.
+    Errors: 404 ``unknown_session``, 422 ``unsupported_model`` (colors).
+    """
+    store = get_store()
+    row = _load_session(store, body.session_id)
+    net = model_from_json(cast(str, row["model_json"]))
+    if net.colors is not None:
+        raise UnsupportedModelError("colors")
+    per_transition = {
+        t: [sum(ww for p, ww in arcs if p == p_) for p_ in net.places]
+        for t, arcs in zip(net.transitions, net.inputs, strict=True)
+    }
+    return {
+        "mu_min": list(minimal_marking(net, parallel=body.parallel)),
+        "per_transition": per_transition,
+    }
 
 
 class FireRequest(BaseModel):
@@ -551,11 +740,12 @@ def state(session_id: str) -> dict[str, object]:
 
 
 @router.get("/sessions")
-def list_sessions() -> list[dict[str, object]]:
-    """Return every session (newest first) as its summary row.
+def list_sessions(limit: int = 50) -> list[dict[str, object]]:
+    """Return the session summaries (newest first), at most ``limit`` rows.
 
-    Response (200); the model is read back from the stored ``model_json``
-    without re-validation (FR-022):
+    ``limit`` defaults to 50 (BUG-9); values below 1 are rejected. Response
+    (200); the model is read back from the stored ``model_json`` without
+    re-validation (FR-022):
 
         [
             {
@@ -567,11 +757,13 @@ def list_sessions() -> list[dict[str, object]]:
             }
         ]
 
-    Errors: 500 ``internal_error``.
+    Errors: 422 ``validation_failed`` (limit < 1), 500 ``internal_error``.
     """
+    if limit < 1:
+        raise ValidationError([{"path": "limit", "message": "limit должен быть не меньше 1"}])
     store = get_store()
     result: list[dict[str, object]] = []
-    for row in store.list_sessions():
+    for row in store.list_sessions()[:limit]:
         model_raw: dict[str, object] = json.loads(cast(str, row["model_json"]))
         result.append(
             {

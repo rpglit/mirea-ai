@@ -8,6 +8,8 @@ ValidationError (422), CapExceededError (413), SolverError (500).
 
 from __future__ import annotations
 
+import json
+from collections import OrderedDict
 from collections.abc import Callable
 from typing import Any
 
@@ -27,6 +29,14 @@ __all__ = ["CATALOG", "SolveFn", "TaskInfo", "Report", "catalog", "solve"]
 CATALOG: list[TaskInfo] = PN_REGISTRY + PN_EXT_REGISTRY + LSS_REGISTRY + FA_REGISTRY
 
 _BY_ID: dict[str, TaskInfo] = {t.task_id: t for t in CATALOG}
+
+# solver caps (ARCH section 2.8)
+SOLVER_MAX_STEPS = 1000
+LSS_MAX_ORDER = 6
+SOLVER_TIMEOUT_S = 30
+
+_CACHE_LIMIT = 128
+_solve_cache: OrderedDict[str, Report] = OrderedDict()
 
 _CUSTOM_ROUTES: dict[str, Callable[[str, dict[str, Any]], Report]] = {
     "describe": lambda tid, d: solve_pn(tid, d),
@@ -66,7 +76,26 @@ def catalog(group: str | None = None) -> list[TaskInfo]:
 
 
 def solve(task_id: str, data: dict[str, Any] | None = None) -> Report:
-    """Solve one catalog (or custom) task and return the methodic Report."""
+    """Solve one catalog (or custom) task and return the methodic Report.
+
+    Repeated calls with the same (task_id, data) are served from a small
+    in-process LRU cache (ARCH risk 4); the cache never grows past
+    ``_CACHE_LIMIT`` entries.
+    """
+    payload: dict[str, Any] = dict(data or {})
+    cache_key = json.dumps([task_id, payload], sort_keys=True, default=str)
+    cached = _solve_cache.get(cache_key)
+    if cached is not None:
+        _solve_cache.move_to_end(cache_key)
+        return cached
+    report = _solve_uncached(task_id, payload)
+    _solve_cache[cache_key] = report
+    if len(_solve_cache) > _CACHE_LIMIT:
+        _solve_cache.popitem(last=False)
+    return report
+
+
+def _solve_uncached(task_id: str, data: dict[str, Any]) -> Report:
     info = _BY_ID.get(task_id)
     if info is not None:
         return info.fn(data or {})

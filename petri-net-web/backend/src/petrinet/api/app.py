@@ -23,9 +23,13 @@ from petrinet.api.routes import router
 from petrinet.config import Settings, get_settings
 from petrinet.errors import (
     CapExceededError,
+    ConflictError,
     ParseError,
+    SolverError,
     TransitionNotEnabledError,
     UnknownSessionError,
+    UnknownTaskError,
+    UnsupportedModelError,
     ValidationError,
 )
 from petrinet.logging_setup import setup_logging
@@ -168,6 +172,99 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     "code": "transition_not_enabled",
                     "message": str(exc),
                     "details": {"transition": exc.transition, "marking": list(exc.marking)},
+                }
+            },
+        )
+
+    @app.exception_handler(UnknownTaskError)
+    async def _handle_unknown_task(request: Request, exc: UnknownTaskError) -> JSONResponse:
+        """Map UnknownTaskError to the 422 ``unknown_task`` body (section 2.6)."""
+        logging.getLogger("petrinet.api").error(
+            "error",
+            extra={
+                "error_code": "unknown_task",
+                "session_id": None,
+                "duration_ms": _duration_ms(request),
+            },
+        )
+        return JSONResponse(
+            status_code=422,
+            content={
+                "error": {
+                    "code": "unknown_task",
+                    "message": str(exc),
+                    "details": {"task_id": exc.task_id},
+                }
+            },
+        )
+
+    @app.exception_handler(UnsupportedModelError)
+    async def _handle_unsupported_model(
+        request: Request, exc: UnsupportedModelError
+    ) -> JSONResponse:
+        """Map UnsupportedModelError to the 422 ``unsupported_model`` body."""
+        logging.getLogger("petrinet.api").error(
+            "error",
+            extra={
+                "error_code": "unsupported_model",
+                "session_id": None,
+                "duration_ms": _duration_ms(request),
+            },
+        )
+        return JSONResponse(
+            status_code=422,
+            content={
+                "error": {
+                    "code": "unsupported_model",
+                    "message": str(exc),
+                    "details": {"feature": exc.feature},
+                }
+            },
+        )
+
+    @app.exception_handler(ConflictError)
+    async def _handle_conflict(request: Request, exc: ConflictError) -> JSONResponse:
+        """Map ConflictError to the 409 ``conflict`` body."""
+        logging.getLogger("petrinet.api").error(
+            "error",
+            extra={
+                "error_code": "conflict",
+                "session_id": None,
+                "duration_ms": _duration_ms(request),
+            },
+        )
+        return JSONResponse(
+            status_code=409,
+            content={
+                "error": {
+                    "code": "conflict",
+                    "message": str(exc),
+                    "details": {
+                        "transitions": list(exc.transitions),
+                        "place": exc.place,
+                    },
+                }
+            },
+        )
+
+    @app.exception_handler(SolverError)
+    async def _handle_solver_error(request: Request, exc: SolverError) -> JSONResponse:
+        """Map SolverError to the 500 ``solver_failed`` body."""
+        logging.getLogger("petrinet.api").error(
+            "error",
+            extra={
+                "error_code": "solver_failed",
+                "session_id": None,
+                "duration_ms": _duration_ms(request),
+            },
+        )
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": {
+                    "code": "solver_failed",
+                    "message": str(exc),
+                    "details": {},
                 }
             },
         )

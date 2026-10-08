@@ -18,7 +18,7 @@ class ParseError(PetriNetError):
         self.message = message
 
     def __str__(self) -> str:
-        return f"parse error at position {self.position}: {self.message}"
+        return f"ошибка разбора в позиции {self.position}: {self.message}"
 
 
 class ValidationError(PetriNetError):
@@ -30,7 +30,7 @@ class ValidationError(PetriNetError):
         self.problems = problems
 
     def __str__(self) -> str:
-        return f"validation failed ({len(self.problems)} problems)"
+        return f"ошибка валидации ({len(self.problems)} проблем)"
 
 
 class UnknownSessionError(PetriNetError):
@@ -42,7 +42,7 @@ class UnknownSessionError(PetriNetError):
         self.session_id = session_id
 
     def __str__(self) -> str:
-        return f"unknown session: {self.session_id}"
+        return f"неизвестная сессия: {self.session_id}"
 
 
 class CapExceededError(PetriNetError):
@@ -54,7 +54,7 @@ class CapExceededError(PetriNetError):
         self.limit = limit
 
     def __str__(self) -> str:
-        return f"reachability cap exceeded: more than {self.limit} markings"
+        return f"превышен предел достижимости: больше {self.limit} маркировок"
 
 
 class ConflictError(PetriNetError):
@@ -127,7 +127,7 @@ class TransitionNotEnabledError(PetriNetError):
         self.transition = transition
 
     def __str__(self) -> str:
-        return f"transition '{self.transition}' is not enabled at marking {self.marking}"
+        return f"переход '{self.transition}' не разрешён в маркировке {self.marking}"
 
 
 class SolverError(PetriNetError):

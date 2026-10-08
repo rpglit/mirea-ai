@@ -55,6 +55,26 @@ def model_to_json(net: PetriNet) -> str:
         "outputs": {t: dict(arcs) for t, arcs in zip(net.transitions, net.outputs, strict=True)},
         "initial_marking": dict(zip(net.places, net.initial_marking, strict=True)),
     }
+    if net.inhibitors is not None:
+        payload["inhibitors"] = {
+            t: list(p) for t, p in zip(net.transitions, net.inhibitors, strict=True)
+        }
+    if net.priorities is not None:
+        payload["priorities"] = {
+            t: pr for t, pr in zip(net.transitions, net.priorities, strict=True)
+        }
+    if net.delays is not None:
+        payload["delays"] = {
+            t: dict(arcs)
+            for t, arcs in zip(net.transitions, net.delays, strict=True)
+            if arcs
+        }
+    if net.colors is not None:
+        payload["colors"] = {
+            "initial_values": net.colors.initial_values,
+            "guards": net.colors.guards,
+            "output_exprs": net.colors.output_exprs,
+        }
     return json.dumps(payload, sort_keys=True, separators=(",", ":"))
 
 
