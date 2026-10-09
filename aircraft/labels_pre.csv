@@ -1,0 +1,38 @@
+﻿old_file;file;user_folder;exif;my_label;my_confidence;difficulty;my_reason;note
+military/1.jpg;military/mil_01.jpg;military;—;military;high;easy;F-16 в ангаре (борт 7225): серая окраска, обслуживание — военная авиация.;
+military/2.jpg;military/mil_02.jpg;military;Make=NIKON CORPORATION | Model=NIKON D810 | Software=Adobe Photoshop CC 2015.5 (Macintosh);military;high;easy;Два F-22 Raptor на ВПП (хвосты AK, стелс-окраска).;
+military/4.jpg;military/mil_03.jpg;military;—;military;medium;hard;Тёмный японский военный борт (красно-белая розетка) у аэроambulанса: сцена учений/спасения.;
+military/6.jpg;military/mil_04.jpg;military;—;military;medium;medium;Истребитель с триколорной раскраской на авиашоу (французский военный), форсаж.;
+military/7.jpg;military/mil_05.jpg;military;—;military;low;hard;Удалённый малый самолёт над трассой: на вид военный, без знаков и деталей.;"далёкий борт; класс military подтверждён пользователем"
+military/8.jpg;military/mil_06.jpg;military;—;military;high;easy;Синий истребитель с надписью RSAF (Royal Saudi Air Force) F-15.;
+military/9.jpg;military/mil_07.jpg;military;—;military;medium;medium;Винтажное Ч/Б: строй из 8 поршневых с Т-хвостом — военная формация.;борта не читаются
+military/10.jpg;military/mil_08.jpg;military;Make=Canon | Model=Canon EOS 5D Mark IV | Copyright=Public Domain | Artist=Tech. Sgt. Colton Elliott;military;high;easy;B-2 Spirit на ВПП: тёмное летающее крыло.;EXIF: Canon 5D Mark IV, US Army (Public Domain)
+military/11.jpg;military/mil_09.jpg;military;—;military;high;easy;B-1B Lancer в полёте: серый, стреловидное крыло.;
+military/12.jpg;military/mil_10.jpg;military;—;military;high;medium;B-2 в полёте на сером небе: тёмный силуэт, военные знаки.;
+military/13.jpg;military/mil_11.jpg;military;"Make=NIKON CORPORATION | Model=NIKON D750 | Software=NIKON D750 Ver.1.10      | Copyright=Capt. Katie Mueller, USAF
+36th Wing Public Affairs
+Andersen Air Force Base, Guam
+366-2228 | Artist=Staff Sgt. Ryan Brooks";military;high;easy;Военные в камуфляже у C-130 на грунтовой полосе.;EXIF: NIKON D750, USAF Public Affairs
+military/14.jpg;military/mil_12.jpg;military;—;military;high;medium;B-58 Hustler с надписью USAF, винтажное сепия-фото.;
+military/15.jpg;military/mil_13.jpg;military;—;military;medium;medium;Военный в шлеме + малый истребитель в небе: военный контекст.;
+military/33.jpg;military/mil_14.jpg;military;—;military;high;easy;Формация F-22 (5208 MT) + F-15E + B-1B.;
+military/военный самолет первой мировой.jpg;military/mil_15.jpg;military;—;military;high;easy;Биплан ПМВ с пулемётчиком на надстройке.;перенесено в military пользователем
+military/кукурузник 1920 года.jpg;military/mil_16.jpg;military;—;military;medium;medium;Двухплан с красной звездой на киле, борт 03 — военная марка СССР.;перенесено в military пользователем
+military/самолетовертолет.webp;military/mil_17.jpg;military;—;military;high;medium;V-22 Osprey (тильтротор, серая окраска, US Marines).;перенесено в military пользователем
+civilian/ан.jpg;civilian/civ_01.jpg;civilian;—;civilian;high;hard;АН-14ТТ-100 «КТСэир» (RA-73050): гражданская модификация семейства АН-2.;выглядит как военный (двигатель на хвосте)
+civilian/белуга.jpg;civilian/civ_02.jpg;civilian;—;civilian;high;easy;Airbus Beluga (F-GSTB): гражданский грузовой.;
+civilian/боинг.jpg;civilian/civ_03.jpg;civilian;—;civilian;high;easy;Boeing 747-8 (BOEING, хвост 747): гражданский лайнер.;
+civilian/5.jpg;civilian/civ_04.jpg;civilian;—;civilian;medium;hard;Авиалесничество: борт сбрасывает воду на пожар — пожарная (гражданская/гос.) авиация.;перенесено в civilian пользователем
+civilian/буран.jpg;civilian/civ_05.jpg;civilian;—;civilian;medium;hard;Буран: космический корабль на носителе, военно-космическая программа.;космический корабль (госпрограмма) — класс civilian по решению пользователя
+civilian/гражданский самолет 1940 год.jpg;civilian/civ_06.jpg;civilian;Software=Adobe Photoshop CS5 Windows;civilian;medium;hard;"По-2 с гражданским бортом СССР-Л1206; тип — «двойник».";EXIF: Photoshop CS5
+civilian/ил.jpg;civilian/civ_07.jpg;civilian;—;civilian;medium;hard;АН-12 «Русло аэро» (гражданская ливрея, флаг РФ).;выглядит как военный (4 ТВД, хвостовое)
+civilian/конкорд.jpg;civilian/civ_08.jpg;civilian;—;civilian;high;medium;Конкорд (Air France) на музейном пьедестале.;
+civilian/кукурузник.jpg;civilian/civ_09.jpg;civilian;Make=SONY | Model=DSLR-A200 | Software=Adobe Photoshop Lightroom 6.6 (Windows);civilian;medium;hard;АН-2 «Авиагтех» (агро-ливрея): гражданское применение военного типа.;EXIF: Sony A200 + Lightroom
+civilian/маленький самолёт.jpg;civilian/civ_10.jpg;civilian;—;civilian;high;medium;Ультралёгкий двухместный (microlight).;не классический самолёт
+civilian/машина-самолет.jpeg;civilian/civ_11.jpg;civilian;—;civilian;high;hard;PAL-V (OM-KLZ): летающая машина/гиросамолёт.;странный класс
+civilian/первый в мире самолет.jpg;civilian/civ_12.jpg;civilian;—;civilian;high;medium;Реконструкция самолёта братьев Райт.;
+civilian/супреджет.jpg;civilian/civ_13.jpg;civilian;—;civilian;high;easy;Sukhoi Superjet 100 (СJ-100).;
+civilian/транспортный.jpg;civilian/civ_14.jpg;civilian;—;civilian;medium;hard;NASA Wonderrunner: грузовой NASA (гос. гражданское агентство).;NASA Wonderrunner (гос. гражданское агентство) — civilian по решению пользователя
+civilian/an124.jpg;civilian/civ_15.jpg;civilian;1920x1080;civilian;high;hard;Ан-124-100М «Руслан», ливрея ANTONOV (гражданский грузовой): «военно выглядящий» тип.;Commons, CC BY-SA 4.0, 2021-12-20
+civilian/boeing737.jpg;civilian/civ_16.jpg;civilian;1920x1280;civilian;high;easy;Boeing 737-823 «American» (N957AN) на посадке: классический гражданский пассажирский.;Commons, CC BY-SA 2.0, 2019-10-23
+civilian/boeing747f.jpg;civilian/civ_17.jpg;civilian;1920x876;civilian;medium;hard;Boeing 747-400F (B-18722) без ливреи (белый грузовой, Анкоридж): гражданский, но «безликий».;Commons, CC BY 2.0, 2011-05-18
