@@ -1,0 +1,51 @@
+{
+  "session": {
+    "id": "abec963afb564373823f688212d1a09f"
+  },
+  "get_session_has_inhibitors": false,
+  "get_session_fields": [
+    "created_at",
+    "current_marking",
+    "graph_built",
+    "input_format",
+    "inputs",
+    "name",
+    "outputs",
+    "places",
+    "report_computed",
+    "session_id",
+    "transitions"
+  ],
+  "before_reopen": {
+    "nodes": 4,
+    "edges": [
+      "input",
+      "output",
+      "inhibitor",
+      "input",
+      "output",
+      "inhibitor"
+    ],
+    "inhibitor": 2,
+    "captions": [
+      " Сеть Петри  (⊣ — ингибиторная дуга) ",
+      "Граф достижимости"
+    ],
+    "badge": "abec963afb564373823f688212d1a09f"
+  },
+  "after_reopen": {
+    "nodes": 4,
+    "edges": [
+      "input",
+      "output",
+      "input",
+      "output"
+    ],
+    "inhibitor": 0,
+    "captions": [
+      " Сеть Петри ",
+      "Граф достижимости"
+    ]
+  },
+  "bug_confirmed": true
+}

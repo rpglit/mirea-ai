@@ -1,0 +1,234 @@
+{
+  "base_url": "http://app:8000",
+  "console": [],
+  "sections": {
+    "perf_full_1503": {
+      "client_total_ms": 2696.5,
+      "net_endpoints": [
+        {
+          "url": "/catalog",
+          "status": 200,
+          "ms": 7
+        },
+        {
+          "url": "/sessions?limit=50",
+          "status": 200,
+          "ms": 53
+        },
+        {
+          "url": "/parse",
+          "status": 201,
+          "ms": 9
+        },
+        {
+          "url": "/graph",
+          "status": 200,
+          "ms": 70
+        },
+        {
+          "url": "/properties",
+          "status": 200,
+          "ms": 1243
+        },
+        {
+          "url": "/state/8e12d55f21c54f8e886ec6195fcd98bf",
+          "status": 200,
+          "ms": 1079
+        }
+      ],
+      "net_canvas_nodes": 11,
+      "graph_canvas_nodes": 1503,
+      "registry_sets": [
+        {
+          "key": "net",
+          "created": false,
+          "t": 47
+        },
+        {
+          "key": "graph",
+          "created": false,
+          "t": 47
+        },
+        {
+          "key": "net",
+          "created": true,
+          "t": 243
+        },
+        {
+          "key": "graph",
+          "created": true,
+          "t": 800
+        },
+        {
+          "key": "graph",
+          "created": true,
+          "t": 2000
+        }
+      ]
+    },
+    "perf_rebuild_1503": {
+      "client_total_ms": 1141.5,
+      "new_registry_sets": [
+        {
+          "key": "graph",
+          "created": false,
+          "t": 3392
+        },
+        {
+          "key": "graph",
+          "created": false,
+          "t": 3392
+        },
+        {
+          "key": "graph",
+          "created": true,
+          "t": 3876
+        },
+        {
+          "key": "graph",
+          "created": true,
+          "t": 4912
+        }
+      ],
+      "netlog": [
+        {
+          "url": "/properties",
+          "status": 200,
+          "ms": 1243
+        },
+        {
+          "url": "/graph",
+          "status": 200,
+          "ms": 61
+        },
+        {
+          "url": "/properties",
+          "status": 200,
+          "ms": 1019
+        }
+      ]
+    },
+    "rerender_on_fire_undo": {
+      "net_creates_before": 1,
+      "sets_delta_fire": [],
+      "sets_delta_undo": [],
+      "note": "each 'created:true' set of the same key == a full cytoscape destroy+recreate"
+    },
+    "view_switch_console": {
+      "errors_warnings": [],
+      "count": 0
+    },
+    "responsive_mobile375": {
+      "viewport": {
+        "w": 375,
+        "h": 667
+      },
+      "overflow": {
+        "scroll": 504,
+        "client": 375,
+        "overflow": true
+      },
+      "net_canvas_box": {
+        "w": 166,
+        "h": 380
+      }
+    },
+    "responsive_tablet768": {
+      "viewport": {
+        "w": 768,
+        "h": 1024
+      },
+      "overflow": {
+        "scroll": 768,
+        "client": 768,
+        "overflow": false
+      },
+      "net_canvas_box": {
+        "w": 362,
+        "h": 380
+      }
+    },
+    "window_resize": {
+      "extent_before": {
+        "x1": -2164.2335526315787,
+        "x2": 3338.733552631579,
+        "y1": -1311.9103618421052,
+        "y2": 2064.9103618421054,
+        "w": 5502.967105263158,
+        "h": 3376.820723684211
+      },
+      "after_700x600": {
+        "extent": {
+          "x1": -2164.2335526315787,
+          "x2": 748.0509868421053,
+          "y1": -1311.9103618421052,
+          "y2": 2064.9103618421054,
+          "w": 2912.284539473684,
+          "h": 3376.820723684211
+        },
+        "canvas_w": 328
+      },
+      "note": "extent unchanged => graph not re-fit after container resize"
+    },
+    "keyboard_tab_order": {
+      "sequence": [
+        {
+          "sel": "select",
+          "hasFocusRing": true,
+          "text": "АвтоОграниченныйПокрывае"
+        },
+        {
+          "sel": "button#btn-build-graph",
+          "hasFocusRing": true,
+          "text": "Построить граф"
+        },
+        {
+          "sel": "button.btn-transition",
+          "hasFocusRing": true,
+          "text": "t1"
+        }
+      ],
+      "reached_canvas": false,
+      "reached_history_line": false
+    },
+    "keyboard_fire_enter": {
+      "history_lines": 1
+    },
+    "perf_big32": {
+      "net_endpoints": [
+        {
+          "url": "/catalog",
+          "status": 200,
+          "ms": 5
+        },
+        {
+          "url": "/sessions?limit=50",
+          "status": 200,
+          "ms": 36
+        },
+        {
+          "url": "/parse",
+          "status": 201,
+          "ms": 11
+        },
+        {
+          "url": "/graph",
+          "status": 200,
+          "ms": 175
+        },
+        {
+          "url": "/properties",
+          "status": 200,
+          "ms": 23
+        },
+        {
+          "url": "/state/7813ee890bb44766ab1f99dff9d8aa29",
+          "status": 200,
+          "ms": 19
+        }
+      ],
+      "net_canvas_nodes": 64,
+      "graph_canvas_nodes": 32
+    }
+  }
+}

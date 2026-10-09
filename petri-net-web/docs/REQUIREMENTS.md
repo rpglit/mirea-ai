@@ -1,10 +1,10 @@
-# Требования — petri-net-web (раунд 2)
+# Требования — petri-net-web (раунд 2 + итерация 3)
 
 | Поле | Значение |
 |---|---|
-| Статус | Раунд 2 (D-041): приложение УВЕРЕННО РЕШАЕТ все задания методички + любые аналогичные; документ переведён на русский |
-| Дата | 08.10.2026 |
-| Источники | MATERIALS_ANALYSIS.md (§2, §3, §5, §8), GAP_ANALYSIS.md (§1, §6), ARCHITECTURE.md (§2), DECISIONS_LOG.md (D-041…D-047) |
+| Статус | Раунд 2 (D-041): приложение УВЕРЕННО РЕШАЕТ все задания методички + любые аналогичные; документ переведён на русский — требования раунда 2 (§3, §5) без изменений. Итерация 3: новые требования §7 (FR-601…615) и §8 (NFR-109…112), статус «новый, к реализации» |
+| Дата | 08.10.2026 (раунд 2); 09.10.2026 (итерация 3, §7–9) |
+| Источники | MATERIALS_ANALYSIS.md (§2, §3, §5, §8), GAP_ANALYSIS.md (§1, §6), ARCHITECTURE.md (§2), DECISIONS_LOG.md (D-041…D-047), AUDIT_REPORT.md (итерация 3: 16 проблем P0–P2), THEME_PLAN.md (итерация 3: темы), MATH_RENDER_PLAN.md (итерация 3: KaTeX) |
 
 ## 1. Цель и объём
 
@@ -154,5 +154,80 @@ UI полностью русский, фронтенд — Vue 3 + Vite + Cytosc
 {"task_id": "TASK-FA-03", "given": {"kind": "moore", "P": ["p1","p2"], "W": ["w0","w1"], "S": ["s0","s1","s2","s3"], "word": "p1p2p2p1p2"},
  "find": ["переработку слова по автоматным тактам"],
  "solution": [{"step": 1, "title": "Такты", "text": "s0→s0→s1→s3→s3→s0; w0* в t0 не учитывается"}],
- "answer": {"states": ["s0","s0","s1","s3","s3","s0"], "output_word": "w0w1w0w0w0"}, "notes": []}
+  "answer": {"states": ["s0","s0","s1","s3","s3","s0"], "output_word": "w0w1w0w0w0"}, "notes": []}
 ```
+
+## 7. Функциональные требования итерации 3 (новые)
+
+Все требования раздела — **статус: новый (итерация 3, к реализации)**. Источники:
+AUDIT_REPORT.md (16 проблем: P0 — 1, P1 — 5, P2 — 10), THEME_PLAN.md,
+MATH_RENDER_PLAN.md. Требования раунда 2 (§3) не изменяются.
+
+### 7.1. Темы оформления (FR-601…602)
+
+- FR-601 (новый, итерация 3) Переключатель тем и persistence. 6 тем: light, dark, system, tokyo-night, catppuccin-mocha, synthwave84; переключатель в шапке (правее view-tabs) — select с aria-label «Тема» и русскими подписями («Светлая», «Тёмная», «Системная», «Tokyo Night», «Catppuccin Mocha», «Synthwave '84»). Выбор — localStorage["pn-theme"], дефолт "system"; "system" следует OS (matchMedia prefers-color-scheme) с live-обновлением при смене OS-темы. Анти-FOUC: inline-скрипт в <head> до module-скрипта ставит data-theme (в DOM живут только 5 effective-тем; "system" — лишь сохранённый выбор). AC: (1) выбор «Тёмная» → documentElement.dataset.theme === "dark", после reload тема сохранена; (2) «Системная» + OS-dark → "dark", смена OS-темы применяется live при выборе "system"; (3) при reload нет вспышки чужой темы (анти-FOUC) — e2e-9 + скриншоты. Покрывает: все 71 TASK (шапка и оба экрана).
+- FR-602 (новый, итерация 3) Темизация всех поверхностей. Все поверхности — через токены --pn-* (THEME_PLAN §1): страница, карточки/панели, инпуты, таблицы, тосты, предупреждения, формулы (--pn-formula-*); Cytoscape-канвасы (сеть, граф достижимости, граф FA) — JS-палитры (canvas не читает CSS-переменные), рестил при переключении — cy.style() на живом инстансе без destroy/re-layout: window.Registry.* сохраняются, позиции/zoom/выделение не сбрасываются. Semantic-подсветки (active/deadlock/current/firing/inhibitor) различимы во всех темах (hue, не только контраст). AC: (1) в style.css и компонентах нет прямых hex на поверхностях (всё через var(--pn-*)); (2) при переключении темы canvas-инстансы те же (id window.Registry.*), layout графов не пересчитывается; (3) паритет: каждый класс/элемент матрицы THEME_PLAN §6 стилизован во всех 5 effective-темах. Покрывает: все 71 TASK (все UI-поверхности).
+
+### 7.2. Рендеринг формул (FR-603…605)
+
+- FR-603 (новый, итерация 3) Компонент Formula (KaTeX). KaTeX 0.19.0 — только npm (без CDN; оффлайн-гарантия: после сборки нет сетевых запросов за JS/шрифтами). Корень — span.formula (display — модификатор-класс formula--display), role="math", aria-label = TeX, title = TeX, data-tex = TeX; KaTeX-часть — aria-hidden. Рендер — явный renderToString(displayMode) с throwOnError в try/catch; режимы inline + display (только явный prop). Копирование TeX: кнопка ⧉ (видима на hover/focus-within, клавиатурно достижима, focus-visible-контур) → navigator.clipboard.writeText → тост «TeX скопирован»; fallback — скрытый textarea + execCommand("copy") → тост; оба отказали → error-тост «Не удалось скопировать TeX»; источник — канонический props.tex. Fallback при ошибке рендера: escaped исходник (<code class="formula__fallback"> в стиле токенов), без проброса исключения и без записей в console (NFR-107). AC: (1) валидный TeX → .katex в DOM, класс formula всегда на корне; (2) битый TeX (\frac{1{) → .formula__fallback с escaped-исходником, 0 console.error/warning; (3) aria-label === title === data-tex === tex; (4) copy → clipboard содержит tex + тост (e2e-10); (5) в network-логе e2e нет запросов к CDN, шрифтов 404 — нет. Покрывает: все 71 TASK (компонент формул).
+- FR-604 (новый, итерация 3) Покрытие точек формул. Формулами рендерятся 14 точек MATH_RENDER_PLAN §5.1/§5.2: отчёты решателей (LSS/PN/FA) — заявление «Дано» (display), встроенные формулы в тексте шагов (raw→tex-карта), значения data/answer (уравнения — display; маркировки/кортежи/µ-векторы — inline; матрицы W±/W, F/B/C/D, (sE−F)⁻¹ — display; перечисления (φ,ψ) — display построчно), каталог LSS-13/18 — нормальная таблица (звено/закон/Φ(s)/g(t,τ)); панель свойств — k = … (включая «неограничена (k = ω)»), ограниченность по позициям (p_i ≤ N), безопасная (k = 1), тупики (кортежи маркировок), минимальная маркировка µmin; маркировки с ω (null → \omega): тупики, дерево Кэрпа–Миллера (ω-узлы, PN-27), итоговые маркировки. Консервативная/обратимость/живость (да/нет, L0–L4, t-идентификаторы) — plain (п.21 §5.2); идентификаторы (p1, t1, s0, w0) в списках/прозе и все e2e-якоря («29», «L1», «23», «нет», «(5,3,4,6,3,3)», «p1 (5)», «узлов: 1503») — plain по карте §5. AC: (1) все 14 точек §5.1/§5.2 рендерятся как .formula, «сырых» str-sympy-строк в выводах решателя — 0; (2) e2e-10: LSS-14 — ≥6 .formula в .report + copy TeX, PN-05 — «(5,3,4,6,3,3)» сохранён в innerText; (3) панель свойств: k = 29 / «неограничена (k = ω)» / тупики / µmin — Formula, якоря «29»/«L1»/«23»/«нет» живы. Покрывает: TASK-LSS-01…23, TASK-PN-01…40, TASK-FA-01…08 (все отчёты).
+- FR-605 (новый, итерация 3) TeX-поля бэкенда (аддитивные *_tex). LSS: новые ключи *_tex рядом со старыми (15 имён: P_tex, y_h_tex, y_p_tex, y_tex, roots_tex, g_tex, phi_tex, A_tex, phi_f_tex, F_iw_tex, law_tex, W_tex, x0_equations_tex, x0_tex + given.statement_tex) по kind (MATH_RENDER_PLAN §4.3); канонический TeX = sp.latex (детерминирован: двойной прогон идентичен); statement_tex — 23 hand-written (по одной на LSS-задачу), law_tex — 11 (каталог звеньев). Старые str()-поля не трогаются — все существующие ассерты и JSON-регрессия 71 задачи остаются зелёными. PN/FA: TeX строится на клиенте (tex.js — чистые функции: tupleToTex, markingToTex, matrixToTex, ioMatrixToTex, sigmaToTex, labelTex, faEnumToTex, fracTex) — бэкенд не меняется. AC: (1) у представителей каждого kind (LSS-01/06/08/10/11/13/18/22/14) все *_tex на месте в answer и solution[].data; (2) answer["phi_tex"] == sp.latex(sympify(answer["phi"])); эталоны: LSS-08 → "\frac{1}{s + 5}", LSS-23 W_tex → "\frac{1}{s + 1}", LSS-14 roots_tex → {"3 - i": 1, "3 + i": 1}; (3) statement_tex во всех 23 LSS; старые ключи байт-в-байт неизменны. Покрывает: TASK-LSS-01…23 (текстовые поля отчётов).
+
+### 7.3. Фиксы аудита P0/P1 (FR-606…611)
+
+- FR-606 (новый, итерация 3) «Консервативная» — значение из объекта отчёта (P0 #1). Строка «Консервативная» читает внутренний флаг: yesNo(Boolean(r.conservative?.conservative)) с разбивкой (per_transition / constant_sum), а не Boolean(объекта) (PropertiesPanel.vue:68; API отдаёт {per_transition, constant_sum, conservative}). AC (AUDIT_REPORT #1): (1) для smoke-сети (эталонной) строка «Консервативная» = «нет» (сейчас «да»); (2) для консервативной сети (цикл p1→t1→p2→t2→p1, µ=(1,0)) — «да»; (3) e2e: props_text содержит «Консервативная» + «нет» для smoke. Покрывает: TASK-PN-04, 08, 09, 19, 21, 28, 29, 31 (отчёты со свойством консервативности).
+- FR-607 (новый, итерация 3) /solve без блокировки event-loop (P1 #2). CPU-работа решателя — вне event-loop (run_in_threadpool либо sync-эндпоинт); таймаут 30 с — без SIGALRM (он жив только на main-потоке): лимит итераций / future.result(timeout) в воркере (механизм — ADR). AC (AUDIT_REPORT #2): (1) p95 задержки /healthz < 50 мс во время solve TASK-LSS-10 (сейчас ~513 мс); (2) параллельный POST /parse отвечает < 200 мс, пока идёт solve; (3) solve > 30 с → 500 solver_failed (русское сообщение), event-loop жив (healthz отвечает), контейнер остаётся healthy. Покрывает: все 71 TASK (endpoint /solve).
+- FR-608 (новый, итерация 3) v2-поля при повторном открытии сессии (P1 #3). GET /sessions/{id} возвращает inhibitors/delays/priorities/colors (поля уже в model_json) — аддитивно, model_to_json не менять; фронтенд маппит их в store.model. AC (AUDIT_REPORT #3): (1) GET /sessions/{id} сети с ⊣ содержит inhibitors (ключ присутствует, значения = исходные); (2) после reopen из «Истории сессий» Registry.net.edges('[direction="inhibitor"]').length == до reopen (2 в тесте), аналогично delays/priorities/colors; (3) скриншот после reopen содержит подпись «(⊣ — ингибиторная дуга)». Покрывает: TASK-PN-10, 15, 30, 32, 33, 36, 37 (сети с Pr/τ/⊣/цветами).
+- FR-609 (новый, итерация 3) Единый полный render графа достижимости (P1 #4). Полный render (destroy + recreate + layout) — только при смене structure; deadlocks/current — лёгкое обновление классов/данных без пересоздания. AC (AUDIT_REPORT #4): (1) за полный анализ window.__audit.sets содержит ровно одну graph=created (сейчас две); (2) client-время full-analysis smoke (1503) снижается минимум на стоимость одного layout (замер до/после); (3) e2e E2E-1..8 зелёные, console чистый (NFR-107), инстанс window.Registry.graph тот же (e2e-контракт не ломается). Покрывает: TASK-PN-01…40 (граф достижимости; эталон TASK-PN-05 — 1503 узла).
+- FR-610 (новый, итерация 3) Без горизонтального оверфлоу на 375px (P1 #5). Таблица свойств: table-layout:fixed/width:100% + overflow-wrap на ячейках (или overflow-x:auto у контейнера); media-query на стекинг канвасов. AC (AUDIT_REPORT #5): (1) viewport 375×667 после анализа: document.documentElement.scrollWidth ≤ clientWidth (нет горизонтального скролла; сейчас 504 > 375); (2) все 3 колонки таблицы свойств читаемы без зума (скриншот-регрессия). Покрывает: все 71 TASK (мобильный UI).
+- FR-611 (новый, итерация 3) Клавиатурная доступность истории и графа (P1 #6). .history-line — role="button", tabindex="0", Enter/Space — восстановление шага; граф достижимости — клавиатурный goto: tabindex + стрелки/Enter по узлам либо отдельный focusable-список узлов-кнопок. AC (AUDIT_REPORT #6): (1) Tab-цикл доходит до .history-line (reached_history_line: true, сейчас false); (2) Enter на сфокусированной .history-line восстанавливает шаг (current_marking меняется); (3) клавиатурный goto по графу: фокус + Enter → current-узел меняется. Покрывает: все 71 TASK (проигрывание и граф).
+
+### 7.4. Дешёвые P2, включённые в итерацию 3 (FR-612…615)
+
+- FR-612 (новый, итерация 3) Кеш статики (P2 #7). Cache-Control: /assets/* (имена с хэшами) — public, max-age=31536000, immutable; index.html — no-cache. AC (AUDIT_REPORT #7): (1) curl -sI /assets/index-*.js → Cache-Control: public, max-age=31536000, immutable (сейчас — только ETag/Last-Modified); (2) / (index.html) → no-cache; (3) повторная загрузка страницы не перечитывает JS/CSS-бандлы (network-лог). Покрывает: все 71 TASK (статика).
+- FR-613 (новый, итерация 3) Re-fit графа при resize (P2 #8). Слушатель resize (ResizeObserver) → cy.resize()/cy.fit() по канвасу (сеть, граф достижимости). AC (AUDIT_REPORT #8): анализ → сужение окна до ~700px → граф целиком в пределах канваса (fit), часть графа не уходит за край (скриншот-регрессия). Покрывает: TASK-PN-01…40 (канвасы).
+- FR-614 (новый, итерация 3) Loading-состояние шаг-панели (P2 #9). Флаг stateLoading: до ответа /state — «…» и «Срабатывание» disabled по причине загрузки, а не ложное «нет разрешённых переходов». AC (AUDIT_REPORT #9): (1) мгновенно после «Проанализировать» (до /state) панель не показывает «нет разрешённых переходов»; (2) после /state — корректный список разрешённых переходов (у smoke-сети из µ0 — t1…t5); (3) e2e-регрессия зелёная. Покрывает: TASK-PN-01…40 (проигрывание).
+- FR-615 (новый, итерация 3) Hotkeys (P2 #13). Минимальный набор: Ctrl/⌘+Enter — анализ/решение; «1»/«2» — экраны («Сеть Петри» / «Задание из практикума»); «T» — циклическая смена темы; Space/Enter по фокусу — действие (срабатывание / восстановление шага / goto). Точный набор — согласовать с UX. Hotkeys задокументированы: подсказка в UI + раздел в README/docs. AC (AUDIT_REPORT #13): (1) Ctrl/⌘+Enter запускает анализ/решение на обоих экранах; (2) «1»/«2» переключают экраны, «T» сменяет тему (dataset.theme меняется); (3) подсказка с hotkeys видна в UI; console чистый. Покрывает: все 71 TASK (оба экрана).
+
+## 8. Нефункциональные требования итерации 3 (новые)
+
+Все требования раздела — **статус: новый (итерация 3, к реализации)**.
+
+- NFR-109 (новый, итерация 3) Темы оформления. 6 тем (light/dark/system/tokyo-night/catppuccin-mocha/synthwave84), переключатель в шапке, persistence localStorage без FOUC, WCAG 2.1 AA во всех темах (текст ≥ 4.5:1, UI-компоненты ≥ 3:1), паритет функциональности и стилей, переключение без перезагрузки и без re-layout графов. AC (THEME_PLAN §3/§7): (1) таблица контрастов §3 — все пары проходят (fg/bg, muted/bg, accent/bg, node-label/canvas, edge-label/canvas, fg/surface, warning-fg/bg, toast-fg/toast-bg; минимум по тексту — tokyo-night 10.59 ≥ 4.5); (2) e2e-9: переключение тем через UI → dataset.theme, canvas-инстансы те же (id window.Registry.*), стили переставлены, reload → тема сохранена, console чистый (NFR-107); (3) скриншоты docs/acceptance/themes/ — 4 пары (main/report/graph/props × light/dark), tokyo-night — бонусом.
+- NFR-110 (новый, итерация 3) Рендеринг формул. KaTeX локально (npm 0.19.0, без CDN — оффлайн-гарантия), единый визуальный язык формул (токены --pn-formula-* во всех темах), inline + display, aria-label и title с TeX, copy TeX (clipboard + fallback + тост), fallback при ошибке рендера — без console-ошибок (NFR-107). AC (MATH_RENDER_PLAN): (1) 14 точек Formula (§5.1/§5.2) рендерятся; (2) бэкенд-поля *_tex + statement_tex/law_tex на месте (FR-605), старые поля не изменились; (3) e2e-10 зелёный (LSS-14, PN-05, PropertiesPanel), console чистый; (4) «сырых» TeX/str-sympy-строк в выводах решателя в UI = 0; (5) шрифты: ровно 20 woff2 в assets, network-лог e2e без 404.
+- NFR-111 (новый, итерация 3) Доступность (сверх тем). Видимый focus (focus-visible, --pn-focus-ring) на всех интерактивных элементах; canvas-операции доступны с клавиатуры (по P1#6: history-line — кнопки, граф — клавиатурный goto через стрелки/список узлов); hotkeys задокументированы (минимум: «T» — тема, «1/2» — экраны, Space/Enter — действие по фокусу — согласовать с UX). AC: axe-core — 0 critical и 0 major на ключевых экранах (оба вида: «Сеть Петри» и «Задание из практикума» × темы light/dark).
+- NFR-112 (новый, итерация 3) Производительность (итерация 3). (1) /solve НЕ блокирует event-loop: p95 /healthz < 50 мс во время solve (P1#2; сейчас до 513 мс), параллельный /parse < 200 мс; (2) рендер графа 1503 узлов — client-время ≤ текущих ~2.8 с (якорь аудита 2.83 с) с запасом, ниже после FR-609; целевой бюджет полного browser-сценария (открытие → анализ → граф + свойства готовы) ≤ 5 с — зафиксировать в ADR; (3) статика — Cache-Control: /assets/* (хэш-имена) public, max-age=31536000, immutable; index.html no-cache (P2#7). AC: (1) замер p95 healthz во время solve TASK-LSS-10 < 50 мс (метод audit_extra2); (2) полный browser-сценарий ≤ 5 с (бюджет по ADR), повторная загрузка без перечитывания бандлов; (3) заголовки статики по п.3.
+
+## 9. Трекируемость итерации 3 (новые FR/NFR → TASK)
+
+Все FR/NFR таблицы — статус: новый (итерация 3, к реализации). Темы и формулы —
+все TASK, т.к. отчёты и UI всех задач содержат формулы и рендерятся в темах;
+P0/P1 — соответствующие TASK по слоям (API/решатели — все TASK, UI-фиксы —
+TASK с графом/свойствами/сессиями).
+
+| TASK | FR/NFR (итерация 3) |
+|---|---|
+| TASK-PN-01…40, TASK-LSS-01…23, TASK-FA-01…08 (все 71) | FR-601, FR-602, NFR-109 — темы (шапка и все поверхности) |
+| TASK-PN-01…40, TASK-LSS-01…23, TASK-FA-01…08 (все 71) | FR-603, FR-604, FR-605, NFR-110 — формулы (все отчёты содержат формулы) |
+| TASK-PN-01…40, TASK-LSS-01…23, TASK-FA-01…08 (все 71) | FR-607, NFR-112 — /solve без блокировки event-loop, бюджеты |
+| TASK-PN-04, TASK-PN-08, TASK-PN-09, TASK-PN-19, TASK-PN-21, TASK-PN-28, TASK-PN-29, TASK-PN-31 | FR-606 — «Консервативная» (P0) |
+| TASK-PN-10, TASK-PN-15, TASK-PN-30, TASK-PN-32, TASK-PN-33, TASK-PN-36, TASK-PN-37 | FR-608 — v2-поля (Pr/τ/⊣/цвета) при reopen сессии (P1) |
+| TASK-PN-01…40 (граф достижимости; эталон TASK-PN-05) | FR-609 — единый render графа (P1) |
+| TASK-PN-01…40, TASK-LSS-01…23, TASK-FA-01…08 (все 71) | FR-610 — оверфлоу 375px (P1); FR-612 — кеш статики (P2) |
+| TASK-PN-01…40, TASK-LSS-01…23, TASK-FA-01…08 (все 71) | FR-611 — клавиатурная доступность (P1); NFR-111 — axe-core |
+| TASK-PN-01…40 (канвасы, шаг-панель) | FR-613 — re-fit на resize (P2); FR-614 — loading-состояние (P2) |
+| TASK-PN-01…40, TASK-LSS-01…23, TASK-FA-01…08 (все 71) | FR-615 — hotkeys (P2) |
+
+### Открытые вопросы (итерация 3)
+
+1. NFR-112 п.2: целевой бюджет полного browser-сценария (предложено ≤ 5 с) —
+   зафиксировать в ADR.
+2. FR-615: финальный набор hotkeys — согласовать с UX (в т.ч. Space/Enter по
+   фокусу, «1/2», «T»).
+3. MATH_RENDER_PLAN §8 Q5/Q6: prose-фрагменты вне raw→tex-карты (e^{st}, s^i)
+   и подписи ANSWER_LABELS/notes — по плану остаются plain; подтвердить при
+   ревью (DoD «ноль сырых строк» формально — выводы решателя).
+4. AUDIT_REPORT #2: механизм таймаута solve без SIGALRM (future.result(timeout)
+   в воркере / лимит итераций) — архитектурное решение (ADR), на требования не
+   влияет.

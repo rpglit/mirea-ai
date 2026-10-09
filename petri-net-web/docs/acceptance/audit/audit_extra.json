@@ -1,0 +1,89 @@
+{
+  "base_url": "http://app:8000",
+  "sections": {
+    "event_loop_block_fresh": {
+      "solve": {
+        "status": 200,
+        "ms": 149.3
+      },
+      "healthz_probes_ms_during_solve": [
+        30.0
+      ],
+      "blocked": false
+    },
+    "mobile375_overflow_elements": {
+      "scrollWidth": 504,
+      "clientWidth": 375,
+      "elements": []
+    },
+    "keyboard_tab_order_full": {
+      "count": 8,
+      "sequence": [
+        {
+          "sel": "button.tab.active",
+          "ring": true,
+          "text": "Сеть Петри"
+        },
+        {
+          "sel": "button.tab",
+          "ring": true,
+          "text": "Задание из практикум"
+        },
+        {
+          "sel": "input#session-name",
+          "ring": true,
+          "text": ""
+        },
+        {
+          "sel": "button#tab-text",
+          "ring": true,
+          "text": "Текстовый ввод"
+        },
+        {
+          "sel": "button#tab-json",
+          "ring": true,
+          "text": "JSON"
+        },
+        {
+          "sel": "button#tab-form",
+          "ring": true,
+          "text": "Форма"
+        },
+        {
+          "sel": "textarea#input-text",
+          "ring": true,
+          "text": ""
+        },
+        {
+          "sel": "button#btn-run-text",
+          "ring": true,
+          "text": "Проанализировать"
+        }
+      ],
+      "first_ten": [
+        "button.tab.active",
+        "button.tab",
+        "input#session-name",
+        "button#tab-text",
+        "button#tab-json",
+        "button#tab-form",
+        "textarea#input-text",
+        "button#btn-run-text"
+      ]
+    },
+    "inhibitor_restore": {
+      "inhibitor_edges_initial": 2,
+      "inhibitor_edges_after_reopen": 0,
+      "caption_mentions_inhibitor": false,
+      "bug": true
+    },
+    "deadlock_state": {
+      "clicked_deadlock_node": false,
+      "state": {
+        "active": 0,
+        "muted": "нет разрешённых переходов",
+        "btnStepDisabled": true
+      }
+    }
+  }
+}
