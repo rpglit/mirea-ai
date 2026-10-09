@@ -27,6 +27,7 @@ LINKS: dict[str, dict[str, Any]] = {
     "following": {
         "title": "идеальная следящая система",
         "law": "y(t) = x(t)",
+        "law_tex": r"y(t) = x(t)",
         "phi": sp.Integer(1),
         "g": delta(t - tau),
         "g_note": "выход мгновенно равен входу",
@@ -34,6 +35,7 @@ LINKS: dict[str, dict[str, Any]] = {
     "extrapolator": {
         "title": "идеальный экстраполятор",
         "law": f"y(t) = x(t + {a})",
+        "law_tex": r"y(t) = x(t + a)",
         "phi": sp.exp(a * s),
         "g": delta(t - (tau - a)),
         "g_note": "выход в момент t равен входу в момент t + a (прогноз)",
@@ -41,6 +43,7 @@ LINKS: dict[str, dict[str, Any]] = {
     "delay": {
         "title": "идеальное запаздывающее звено",
         "law": f"y(t) = x(t - {a})",
+        "law_tex": r"y(t) = x(t - a)",
         "phi": sp.exp(-a * s),
         "g": delta(t - (tau + a)),
         "g_note": "выход повторяет вход с запаздыванием a",
@@ -48,12 +51,14 @@ LINKS: dict[str, dict[str, Any]] = {
     "amplifier": {
         "title": "безынерционный усилитель",
         "law": "y(t) = k·x(t)",
+        "law_tex": r"y(t) = k\,x(t)",
         "phi": k,
         "g": k * delta(t - tau),
     },
     "differentiator": {
         "title": "идеальное дифференцирующее звено",
         "law": "y(t) = x′(t)",
+        "law_tex": r"y(t) = x'(t)",
         "phi": s,
         "g": delta(t - tau).diff(t),
         "freq_note": "при s = iω: |Φ| = ω, φ(ω) = π/2 (опережение на π/2)",
@@ -61,6 +66,7 @@ LINKS: dict[str, dict[str, Any]] = {
     "integrator": {
         "title": "идеальное интегрирующее звено",
         "law": "y(t) = ∫x(β)dβ",
+        "law_tex": r"y(t) = \int x(\beta)\,d\beta",
         "phi": 1 / s,
         "g": step(t - tau),
         "g_note": "единичная ступень: 0 при t < τ, 1 при t ≥ τ",
@@ -69,12 +75,14 @@ LINKS: dict[str, dict[str, Any]] = {
     "forcing1": {
         "title": "форсирующее звено 1-го порядка",
         "law": "y(t) = k·(T·x′(t) + x(t))",
+        "law_tex": r"y(t) = k\left( T x'(t) + x(t) \right)",
         "phi": k * (T * s + 1),
         "g": k * (T * delta(t - tau).diff(t) + delta(t - tau)),
     },
     "forcing2": {
         "title": "форсирующее звено 2-го порядка",
         "law": "y(t) = k·(T²·x″(t) + 2α·T·x′(t) + x(t))",
+        "law_tex": r"y(t) = k\left( T^{2} x''(t) + 2\alpha T x'(t) + x(t) \right)",
         "phi": k * (T**2 * s**2 + 2 * a * T * s + 1),
         "g": k
         * (T**2 * delta(t - tau).diff(t, 2) + 2 * a * T * delta(t - tau).diff(t) + delta(t - tau)),
@@ -82,6 +90,7 @@ LINKS: dict[str, dict[str, Any]] = {
     "aperiodic": {
         "title": "апериодическое звено",
         "law": "T·y′(t) + y(t) = k·x(t)",
+        "law_tex": r"T y'(t) + y(t) = k x(t)",
         "phi": k / (T * s + 1),
         "g": (k / T) * sp.exp(-(t - tau) / T),
         "A": k / sp.sqrt(1 + T**2 * omega**2),
@@ -90,6 +99,7 @@ LINKS: dict[str, dict[str, Any]] = {
     "harmonic": {
         "title": "гармонические колебания (частный случай апериодического, s = iω)",
         "law": "T·y′(t) + y(t) = k·x(t)",
+        "law_tex": r"T y'(t) + y(t) = k x(t)",
         "phi": k / (T * s + 1),
         "g": (k / T) * sp.exp(-(t - tau) / T),
         "A": k / sp.sqrt(1 + T**2 * omega**2),
@@ -99,6 +109,7 @@ LINKS: dict[str, dict[str, Any]] = {
     "oscillatory": {
         "title": "колебательное звено",
         "law": "T²·y″(t) + 2Tξ·y′(t) + y(t) = k·x(t), T > 0, 0 < ξ < 1",
+        "law_tex": r"T^{2} y''(t) + 2T\xi\,y'(t) + y(t) = k x(t), \quad T > 0, \ 0 < \xi < 1",
         "phi": k / (T**2 * s**2 + 2 * T * xi * s + 1),
         "g": k / (T * sp.sqrt(1 - xi**2))
         * sp.exp(-xi * t / T)

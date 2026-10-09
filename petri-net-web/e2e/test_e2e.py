@@ -187,3 +187,65 @@ def test_e2e8_png_exports(page: Page) -> None:
         page.click("#btn-export-all-png")
     blob3 = Path(all_info.value.path()).read_bytes()
     assert blob3[:8] == b"\x89PNG\r\n\x1a\n"
+
+
+def test_e2e10_math_render(page: Page) -> None:
+    """E2E-10: KaTeX-рендер формул в отчёте, копирование TeX, регрессия PN-05."""
+    math_dir = SCREENSHOTS_DIR / "math"
+    math_dir.mkdir(parents=True, exist_ok=True)
+    page.goto(BASE_URL)
+    page.click("button:has-text('Задание из практикума')")
+    page.wait_for_selector(".task-card")
+    page.click("button.tab:has-text('ЛСС')")
+    page.locator(".task-card", has_text="TASK-LSS-14").first.locator(
+        "button", has_text="Решить"
+    ).click()
+    page.wait_for_selector("#task-data")
+    page.locator(".solver button.primary", has_text="Решить").click()
+    page.wait_for_selector(".report .katex")
+    assert page.evaluate("() => document.querySelector('.report .formula .katex') !== null")
+    aria_ok = page.evaluate(
+        "() => Array.from(document.querySelectorAll('.report .formula')).some("
+        "(e) => (e.getAttribute('aria-label') || '').includes('\\\\'))"
+    )
+    assert aria_ok
+    raw_y = "(122*sin(3*t) - cos(3*t))*exp(3*t)/65 - 18*sin(3*t)/65 + cos(3*t)/65"
+    assert raw_y not in page.inner_text(".report")
+    idx = page.evaluate(
+        "() => Array.from(document.querySelectorAll('.report .formula')).findIndex("
+        "(e) => (e.getAttribute('data-tex') || '').includes('\\\\'))"
+    )
+    assert idx >= 0
+    target = page.locator(".report .formula").nth(idx)
+    data_tex = target.get_attribute("data-tex")
+    assert data_tex and "\\" in data_tex
+    assert target.locator(".formula__copy").count() == 1
+    target.hover()
+    target.locator(".formula__copy").click()
+    page.wait_for_selector("#toast:not(.hidden)", timeout=5000)
+    toast_text = page.inner_text("#toast")
+    clipboard_available = page.evaluate(
+        "() => !!(navigator.clipboard && navigator.clipboard.readText)"
+    )
+    if clipboard_available:
+        clip = page.evaluate("() => navigator.clipboard.readText()")
+        assert clip == data_tex
+    else:
+        assert "TeX скопирован" in toast_text
+    page.screenshot(path=str(math_dir / "e2e-10-lss14.png"), full_page=True)
+    page.goto(BASE_URL)
+    page.click("button:has-text('Задание из практикума')")
+    page.wait_for_selector(".task-card")
+    page.click("button.tab:has-text('Сети Петри')")
+    page.locator(".task-card", has_text="TASK-PN-05").first.locator(
+        "button", has_text="Решить"
+    ).click()
+    page.wait_for_selector("#task-data")
+    page.locator(".solver button.primary", has_text="Решить").click()
+    page.wait_for_selector(".report")
+    report_text = page.inner_text(".report")
+    assert "(5,3,4,6,3,3)" in report_text
+    assert page.locator(".report .katex").count() >= 3
+    page.screenshot(path=str(math_dir / "e2e-10-pn05.png"), full_page=True)
+
+

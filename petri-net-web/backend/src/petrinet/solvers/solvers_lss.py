@@ -336,6 +336,7 @@ def _solve_ode(
     return {
         "P": sp.factor(poly),
         "roots": {str(r): m for r, m in roots.items()},
+        "roots_tex": {sp.latex(r): m for r, m in roots.items()},
         "y_h": sp.simplify(y_h),
         "y_p": y_p_fixed,
         "y": y_final,
@@ -427,6 +428,9 @@ _TASKS: dict[str, dict[str, Any]] = {
         "source": "семинар 9, стр. 5, п.1",
         "type": "задание",
         "statement": "y'' + y = 2t² + 3t + 1, y(0) = 0, y'(0) = 0, y''(0) = 1.",
+        "statement_tex": (
+            r"y''(t) + y(t) = 2t^{2} + 3t + 1, \quad y(0) = 0,\ y'(0) = 0,\ y''(0) = 1"
+        ),
         "find": ["y(t) = y_о(t) + y_ч(t) (М4, Таблицы 1 и 2)"],
         "spec": {
             "kind": "ode",
@@ -440,6 +444,7 @@ _TASKS: dict[str, dict[str, Any]] = {
         "source": "семинар 9, стр. 5, п.2",
         "type": "задание",
         "statement": "y'' + y' = 3t + 4, y(0) = 0, y'(0) = 0, y''(0) = 1.",
+        "statement_tex": r"y''(t) + y'(t) = 3t + 4, \quad y(0) = 0,\ y'(0) = 0,\ y''(0) = 1",
         "find": ["y(t) = y_о(t) + y_ч(t)"],
         "spec": {
             "kind": "ode",
@@ -453,6 +458,7 @@ _TASKS: dict[str, dict[str, Any]] = {
         "source": "семинар 9, стр. 5, п.3",
         "type": "задание",
         "statement": "y'' + y' = 5e^{−2t}, y(0) = 0, y'(0) = 0, y''(0) = 1.",
+        "statement_tex": r"y''(t) + y'(t) = 5e^{-2t}, \quad y(0) = 0,\ y'(0) = 0,\ y''(0) = 1",
         "find": ["y(t) = y_о(t) + y_ч(t)"],
         "spec": {
             "kind": "ode",
@@ -466,6 +472,7 @@ _TASKS: dict[str, dict[str, Any]] = {
         "source": "семинар 9, стр. 5, п.4",
         "type": "задание",
         "statement": "y'' + 2y' + y = t·e^{−t}, y(0) = 0, y'(0) = 1.",
+        "statement_tex": r"y''(t) + 2y'(t) + y(t) = t\,e^{-t}, \quad y(0) = 0,\ y'(0) = 1",
         "find": ["y(t): корень s = −1 кратности 2 — резонансный вид частного с множителем t²"],
         "spec": {
             "kind": "ode",
@@ -479,6 +486,7 @@ _TASKS: dict[str, dict[str, Any]] = {
         "source": "семинар 9, стр. 5, п.5",
         "type": "задание",
         "statement": "y'' + y = 2cos 2t, y(0) = 0, y'(0) = 1.",
+        "statement_tex": r"y''(t) + y(t) = 2\cos 2t, \quad y(0) = 0,\ y'(0) = 1",
         "find": ["y(t): частное A·sin 2t + B·cos 2t"],
         "spec": {
             "kind": "ode",
@@ -492,6 +500,7 @@ _TASKS: dict[str, dict[str, Any]] = {
         "source": "семинар 10, стр. 13, п.1",
         "type": "задание",
         "statement": "Найти весовую функцию системы ẏ(t) − 8y(t) = x(t).",
+        "statement_tex": r"\dot{y}(t) - 8y(t) = x(t)",
         "find": ["g(t, τ)"],
         "spec": {"kind": "impulse", "a": [1, -8]},
     },
@@ -501,6 +510,7 @@ _TASKS: dict[str, dict[str, Any]] = {
         "type": "задание",
         "statement": "Найти весовую функцию апериодического звена "
             "Ty'(t) + y(t) = kx(t) (T, k — const).",
+        "statement_tex": r"T y'(t) + y(t) = k\,x(t), \quad T, k = \mathrm{const}",
         "find": ["g(t, τ)"],
         "spec": {"kind": "impulse", "a": ["T", 1], "gain": "k"},
     },
@@ -509,6 +519,7 @@ _TASKS: dict[str, dict[str, Any]] = {
         "source": "семинар 11, стр. 8",
         "type": "пример",
         "statement": "Найти передаточную функцию системы y'(t) + 5y(t) = x(t).",
+        "statement_tex": r"y^{\prime}(t) + 5y(t) = x(t)",
         "find": ["Φ(s)"],
         "spec": {"kind": "transfer", "a": [1, 5]},
     },
@@ -517,6 +528,7 @@ _TASKS: dict[str, dict[str, Any]] = {
         "source": "семинар 11, стр. 9",
         "type": "пример",
         "statement": "Найти передаточную функцию системы y''(t) − 3y'(t) + 2y(t) = x(t).",
+        "statement_tex": r"y^{\prime\prime}(t) - 3y^{\prime}(t) + 2y(t) = x(t)",
         "find": ["Φ(s)"],
         "spec": {"kind": "transfer", "a": [1, -3, 2]},
     },
@@ -525,6 +537,7 @@ _TASKS: dict[str, dict[str, Any]] = {
         "source": "семинар 11, стр. 15",
         "type": "пример",
         "statement": "a2y'' + a1y' + a0y = b1x' + b0x — найти Φ(s) и Φ(iω).",
+        "statement_tex": r"a_{2}\,y''(t) + a_{1}\,y'(t) + a_{0}\,y(t) = b_{1}\,x'(t) + b_{0}\,x(t)",
         "find": ["Φ(s) = (b1s+b0)/(a2s²+a1s+a0)", "Φ(iω)"],
         "spec": {
             "kind": "transfer",
@@ -538,6 +551,7 @@ _TASKS: dict[str, dict[str, Any]] = {
         "source": "семинар 11, стр. 16",
         "type": "пример",
         "statement": "Тy'(t) + y(t) = kx(t) при s = iω: Φ(iω), АЧХ, ФЧХ.",
+        "statement_tex": r"T y'(t) + y(t) = k\,x(t), \quad s = i\omega",
         "find": ["Φ(iω)", "A(ω) = k/√(1+T²ω²)", "φ(ω) = −arctg(Tω)"],
         "spec": {"kind": "link", "name": "harmonic", "params": {"T": "T", "k": "k"}},
     },
@@ -546,6 +560,7 @@ _TASKS: dict[str, dict[str, Any]] = {
         "source": "семинар 11, стр. 17",
         "type": "пример",
         "statement": "T²y'' + 2Tξy' + y = kx(t), 0 < ξ < 1: Φ(s), A(ω), φ(ω).",
+        "statement_tex": r"T^{2} y''(t) + 2T\xi\,y'(t) + y(t) = k\,x(t), \quad 0 < \xi < 1",
         "find": ["Φ(s) = k/(T²s²+2Tξs+1)", "A(ω)", "φ(ω)"],
         "spec": {"kind": "link", "name": "oscillatory", "params": {"T": "T", "k": "k", "xi": "xi"}},
     },
@@ -554,6 +569,7 @@ _TASKS: dict[str, dict[str, Any]] = {
         "source": "семинар 11, стр. 10–14",
         "type": "пример",
         "statement": "Для каждой из 11 стандартных систем — передаточная функция Φ(s).",
+        "statement_tex": r"\Phi(s)",
         "find": ["каталог: 11 звеньев, Φ(s) (и g(t,τ) — ср. TASK-LSS-18)"],
         "spec": {"kind": "links_catalog"},
     },
@@ -562,6 +578,9 @@ _TASKS: dict[str, dict[str, Any]] = {
         "source": "семинар 12, стр. 1, Задание 1",
         "type": "зачёт",
         "statement": "а) выходной сигнал при x(t) = cos 3t; б) Φ(s), АЧХ, ФЧХ.",
+        "statement_tex": (
+            r"y''(t) - 6y'(t) + 10y(t) = 5x(t), \quad x(t) = \cos 3t, \ y(0) = 0, \ y'(0) = 1"
+        ),
         "find": ["а) y(t) (переходный + установившийся)", "б) Φ(s), A(ω), φ(ω)"],
         "spec": {
             "kind": "parts",
@@ -588,6 +607,7 @@ _TASKS: dict[str, dict[str, Any]] = {
         "source": "семинар 12, стр. 1, Задание 2",
         "type": "зачёт",
         "statement": "а) весовая функция; б) выходной сигнал при x(t) = 2e^{−t/2}.",
+        "statement_tex": r"y'(t) + 7y(t) = 3x(t), \quad x(t) = 2e^{-t/2}, \ y(0) = 1",
         "find": ["а) h(t)", "б) y(t)"],
         "spec": {
             "kind": "parts",
@@ -608,6 +628,7 @@ _TASKS: dict[str, dict[str, Any]] = {
         "source": "семинар 12, стр. 1, Задание 3",
         "type": "зачёт",
         "statement": "Ty'(t) + y(t) = kx(t), y(0) = y0: весовая и передаточная функции.",
+        "statement_tex": r"T y'(t) + y(t) = k\,x(t), \quad y(0) = y_{0}",
         "find": ["h(t) = (k/T)e^{−t/T}", "Φ(s) = k/(Ts+1)"],
         "spec": {
             "kind": "parts",
@@ -622,6 +643,7 @@ _TASKS: dict[str, dict[str, Any]] = {
         "source": "семинар 10, стр. 2–3",
         "type": "пример",
         "statement": "Найти весовую функцию системы ẏ(t) + 5y(t) = x(t).",
+        "statement_tex": r"\dot{y}(t) + 5y(t) = x(t)",
         "find": ["g(t, τ) = e^{−5(t−τ)}"],
         "spec": {"kind": "impulse", "a": [1, 5]},
     },
@@ -630,6 +652,7 @@ _TASKS: dict[str, dict[str, Any]] = {
         "source": "семинар 10, стр. 4–7",
         "type": "пример",
         "statement": "Подать на вход δ-функцию: найти g(t,τ) для 6 идеальных систем.",
+        "statement_tex": r"\delta(t) \to g(t, \tau)",
         "find": [
             "g(t,τ) для: следящей, экстраполатора, запаздывающего, усилителя, "
             "дифференцирующего, интегрирующего",
@@ -642,6 +665,7 @@ _TASKS: dict[str, dict[str, Any]] = {
         "type": "пример",
         "statement": "Двигатель: Jω̇ = M − hω, вход M, выход ω, J = const. "
             "Найти весовую; стационарна ли система.",
+        "statement_tex": r"J\dot{\omega} = M - h\,\omega, \quad J = \mathrm{const}",
         "find": ["g(t, τ) = (1/J)e^{−(h/J)(t−τ)}", "стационарность"],
         "spec": {"kind": "impulse", "a": ["J", "h"], "gain": 1},
     },
@@ -650,6 +674,7 @@ _TASKS: dict[str, dict[str, Any]] = {
         "source": "семинар 10, стр. 11–12",
         "type": "пример",
         "statement": "T²y'' + 2Tξy' + y = ku(t), 0 < ξ < 1: найти весовую функцию.",
+        "statement_tex": r"T^{2} y''(t) + 2T\xi\,y'(t) + y(t) = k\,u(t), \quad 0 < \xi < 1",
         "find": ["g(t) = 1/(T√(1−ξ²))·e^{−ξt/T}·sin(√(1−ξ²)·t/T)"],
         "spec": {"kind": "impulse", "a": ["T**2", "2*T*xi", 1], "gain": "k"},
         "note": (
@@ -662,6 +687,7 @@ _TASKS: dict[str, dict[str, Any]] = {
         "source": "13-14, стр. 6",
         "type": "пример",
         "statement": "my'' + hy' + cy = f(t): перейти к пространству состояний x1=y, x2=y′.",
+        "statement_tex": r"m y''(t) + h y'(t) + c y(t) = f(t), \quad x_{1} = y, \ x_{2} = y'",
         "find": ["F, B, C, D (уравнения динамики и выхода)"],
         "spec": {
             "kind": "statespace",
@@ -673,6 +699,7 @@ _TASKS: dict[str, dict[str, Any]] = {
         "source": "13-14, стр. 17",
         "type": "пример",
         "statement": "Вывод СЛАУ для X(0) по НУ ОДУ: CX0 = y0, CFX0 = y0′ (общий случай n=2).",
+        "statement_tex": r"C X_{0} = y_{0}, \quad C F X_{0} = y^{\prime}_{0}, \ n = 2",
         "find": [
             "c1·x1(0)+c2·x2(0) = y0",
             "−c2(a0/a2)x1(0)+(c1−c2(a1/a2))x2(0) = y0′",
@@ -689,6 +716,7 @@ _TASKS: dict[str, dict[str, Any]] = {
         "type": "пример",
         "statement": "y'' + 3y' + 2y = u' + 2u, y(0) = 1, y'(0) = 1; "
             "F=[0 1;−2 −3], B=[0;1], C=[2;1], D=0.",
+        "statement_tex": r"y''(t) + 3y'(t) + 2y(t) = u'(t) + 2u(t), \quad y(0) = 1, \ y'(0) = 1",
         "find": ["(sE−F)⁻¹", "W(s) = C(sE−F)⁻¹B", "СЛАУ для X(0)"],
         "spec": {
             "kind": "statespace",
@@ -718,16 +746,25 @@ def _solve_part(spec: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, A
         ics = list(spec.get("ics", []))
         result, notes = _solve_ode(a, rhs_terms, ics)
         answer["P"] = str(result["P"])
+        answer["P_tex"] = sp.latex(result["P"])
         answer["y_h"] = str(result["y_h"])
+        answer["y_h_tex"] = sp.latex(result["y_h"])
         answer["y_p"] = str(result["y_p"])
+        answer["y_p_tex"] = sp.latex(result["y_p"])
         answer["y"] = str(result["y"])
+        answer["y_tex"] = sp.latex(result["y"])
         steps.append(
             {
                 "step": 1,
                 "title": "Характеристический многочлен и корни (М4, Таблица 1)",
                 "text": f"P(s) = {sp.factor(sp.expand(_poly(a, s)))}; корни: "
                 + ", ".join(f"{r} (кратность {m})" for r, m in result["roots"].items()),
-                "data": {"P": answer["P"], "roots": result["roots"]},
+                "data": {
+                    "P": answer["P"],
+                    "P_tex": answer["P_tex"],
+                    "roots": result["roots"],
+                    "roots_tex": result["roots_tex"],
+                },
             }
         )
         steps.append(
@@ -735,7 +772,7 @@ def _solve_part(spec: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, A
                 "step": 2,
                 "title": "Однородное решение",
                 "text": f"y_о(t) = {answer['y_h']}",
-                "data": {"y_h": answer["y_h"]},
+                "data": {"y_h": answer["y_h"], "y_h_tex": answer["y_h_tex"]},
             }
         )
         steps.append(
@@ -746,7 +783,7 @@ def _solve_part(spec: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, A
                     "Вид частного по правому вычитанию с учётом резонанса "
                     f"(множитель t^k при совпадении с корнем P): y_ч(t) = {answer['y_p']}"
                 ),
-                "data": {"y_p": answer["y_p"]},
+                "data": {"y_p": answer["y_p"], "y_p_tex": answer["y_p_tex"]},
             }
         )
         steps.append(
@@ -754,7 +791,7 @@ def _solve_part(spec: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, A
                 "step": 4,
                 "title": "Найст констант по начальный условиям и ответ",
                 "text": f"y(t) = y_о(t) + y_ч(t) = {answer['y']}",
-                "data": {"y": answer["y"]},
+                "data": {"y": answer["y"], "y_tex": answer["y_tex"]},
             }
         )
     elif kind == "impulse":
@@ -762,12 +799,13 @@ def _solve_part(spec: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, A
         gain = _sym(spec.get("gain", 1), "gain")
         g, imp_notes = _impulse(a, gain)
         answer["g"] = str(g)
+        answer["g_tex"] = sp.latex(g)
         steps.append(
             {
                 "step": 1,
                 "title": "Весовая функция (М2/М3: вход δ(t−τ), вариация постоянной)",
                 "text": imp_notes[0] if imp_notes else "g(t,τ) — реакция на δ-вход",
-                "data": {"g": answer["g"]},
+                "data": {"g": answer["g"], "g_tex": answer["g_tex"]},
             }
         )
         steps.append(
@@ -775,7 +813,7 @@ def _solve_part(spec: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, A
                 "step": 2,
                 "title": "Ответ",
                 "text": f"система стационарна: g зависит только от t − τ. g(t,τ) = {answer['g']}",
-                "data": {"g": answer["g"], "stationary": True},
+                "data": {"g": answer["g"], "g_tex": answer["g_tex"], "stationary": True},
             }
         )
         notes.extend(imp_notes)
@@ -784,6 +822,7 @@ def _solve_part(spec: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, A
         b = _coeffs(spec["b"], "b") if spec.get("b") else None
         phi = _transfer(a, b)
         answer["phi"] = str(phi)
+        answer["phi_tex"] = sp.latex(phi)
         steps.append(
             {
                 "step": 1,
@@ -792,19 +831,28 @@ def _solve_part(spec: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, A
                     "Подставляем x(t) = e^{st}, y(t) = Φ(s)e^{st}: производные y^(i) дают s^i; "
                     f"e^{{st}} сокращается ⇒ Φ(s) = {answer['phi']}"
                 ),
-                "data": {"phi": answer["phi"]},
+                "data": {"phi": answer["phi"], "phi_tex": answer["phi_tex"]},
             }
         )
         if spec.get("freq"):
             freq = _freq(phi)
             answer["A"] = str(freq["A"])
+            answer["A_tex"] = sp.latex(freq["A"])
             answer["phi_f"] = str(freq["phi"])
+            answer["phi_f_tex"] = sp.latex(freq["phi"])
             steps.append(
                 {
                     "step": 2,
                     "title": "Частотная характеристика (М8: s = iω)",
                     "text": f"Φ(iω) = {freq['F_iw']}; A(ω) = |Φ(iω)|, φ(ω) = arg Φ(iω)",
-                    "data": {"F_iw": str(freq["F_iw"]), "A": answer["A"], "phi_f": answer["phi_f"]},
+                    "data": {
+                        "F_iw": str(freq["F_iw"]),
+                        "F_iw_tex": sp.latex(freq["F_iw"]),
+                        "A": answer["A"],
+                        "A_tex": answer["A_tex"],
+                        "phi_f": answer["phi_f"],
+                        "phi_f_tex": answer["phi_f_tex"],
+                    },
                 }
             )
     elif kind == "freq":
@@ -814,8 +862,11 @@ def _solve_part(spec: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, A
         freq = _freq(phi)
         answer = {
             "phi": str(phi),
+            "phi_tex": sp.latex(phi),
             "A": str(freq["A"]),
+            "A_tex": sp.latex(freq["A"]),
             "phi_f": str(freq["phi"]),
+            "phi_f_tex": sp.latex(freq["phi"]),
         }
         steps.append(
             {
@@ -839,13 +890,18 @@ def _solve_part(spec: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, A
             "name": spec["name"],
             "title": entry["title"],
             "law": entry["law"],
+            "law_tex": entry.get("law_tex"),
             "phi": str(entry["phi"]),
+            "phi_tex": sp.latex(entry["phi"]),
         }
         if "g" in entry:
             answer["g"] = str(entry["g"])
+            answer["g_tex"] = sp.latex(entry["g"])
         if "A" in entry:
             answer["A"] = str(entry["A"])
+            answer["A_tex"] = sp.latex(entry["A"])
             answer["phi_f"] = str(entry["phi_f"])
+            answer["phi_f_tex"] = sp.latex(entry["phi_f"])
         steps.append(
             {
                 "step": 1,
@@ -863,7 +919,7 @@ def _solve_part(spec: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, A
                     "step": 2,
                     "title": "Весовая функция",
                     "text": f"g(t,τ) = {answer['g']}",
-                    "data": {"g": answer["g"]},
+                    "data": {"g": answer["g"], "g_tex": answer["g_tex"]},
                 }
             )
         if "A" in answer:
@@ -872,7 +928,8 @@ def _solve_part(spec: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, A
                     "step": len(steps) + 1,
                     "title": "Частотные характеристики (s = iω)",
                     "text": f"АЧХ: A(ω) = {answer['A']}; ФЧХ: φ(ω) = {answer['phi_f']}",
-                    "data": {"A": answer["A"], "phi_f": answer["phi_f"]},
+                    "data": {"A": answer["A"], "A_tex": answer["A_tex"], "phi_f": answer["phi_f"],
+                             "phi_f_tex": answer["phi_f_tex"]},
                 }
             )
     elif kind == "links_catalog":
@@ -883,8 +940,11 @@ def _solve_part(spec: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, A
                     "name": name,
                     "title": str(entry["title"]),
                     "law": str(entry["law"]),
+                    "law_tex": entry.get("law_tex"),
                     "phi": str(entry["phi"]),
+                    "phi_tex": sp.latex(entry["phi"]),
                     "g": str(entry["g"]) if "g" in entry else None,
+                    "g_tex": sp.latex(entry["g"]) if "g" in entry else None,
                 }
             )
         answer = {"links": rows}
@@ -901,7 +961,14 @@ def _solve_part(spec: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, A
         rows = []
         for name in names:
             entry = link_info(name)
-            rows.append({"name": name, "title": str(entry["title"]), "g": str(entry["g"])})
+            rows.append(
+                {
+                    "name": name,
+                    "title": str(entry["title"]),
+                    "g": str(entry["g"]),
+                    "g_tex": sp.latex(entry["g"]),
+                }
+            )
         answer = {"links": rows}
         steps.append(
             {
@@ -919,11 +986,14 @@ def _solve_part(spec: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, A
             "C": result["C"].tolist(),
             "D": result["D"].tolist(),
             "W": str(result["W"][0, 0]),
+            "W_tex": sp.latex(result["W"][0, 0]),
         }
         if "x0_equations" in result:
             answer["x0_equations"] = [str(e) for e in result["x0_equations"]]
+            answer["x0_equations_tex"] = [sp.latex(e) for e in result["x0_equations"]]
             if "x0" in result:
                 answer["x0"] = {str(kk): str(vv) for kk, vv in result["x0"].items()}
+                answer["x0_tex"] = {str(kk): sp.latex(vv) for kk, vv in result["x0"].items()}
         steps.append(
             {
                 "step": 1,
@@ -938,6 +1008,7 @@ def _solve_part(spec: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, A
                     "C": answer["C"],
                     "D": answer["D"],
                     "W": answer["W"],
+                    "W_tex": answer["W_tex"],
                 },
             }
         )
@@ -947,7 +1018,10 @@ def _solve_part(spec: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, A
                     "step": 2,
                     "title": "СЛАУ для X(0) по начальный условиям",
                     "text": "C·X0 = y(0); C·F·X0 (+ C·B·u(0)) = y′(0).",
-                    "data": answer["x0_equations"],
+                    "data": {
+                        "x0_equations": answer["x0_equations"],
+                        "x0_equations_tex": answer["x0_equations_tex"],
+                    },
                 }
             )
         notes.extend(ss_notes)
@@ -1000,6 +1074,8 @@ def solve_lss(task_id: str, spec: dict[str, Any] | None = None) -> Report:
         find = list(task["find"]) if task else [f"решение задачи вида {spec.get('kind')}"]
         if task:
             given["statement"] = task["statement"]
+            if task.get("statement_tex"):
+                given["statement_tex"] = task["statement_tex"]
     if task and task.get("note"):
         notes.append(str(task["note"]))
 

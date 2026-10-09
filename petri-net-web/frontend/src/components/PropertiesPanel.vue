@@ -1,6 +1,8 @@
 <script setup>
 import { computed } from "vue";
 import { compactTuple, yesNo } from "../store";
+import Formula from "./Formula.vue";
+import { labelTex, markingToTex } from "../math/tex";
 
 const props = defineProps({
   report: { type: Object, default: null },
@@ -13,6 +15,15 @@ const VERDICT_NOTES = {
   частичнотупиковая:
     "есть маркировка, где часть переходов перестает срабатывать, а другая часть продолжает работать бесконечно долго",
 };
+
+function interleave(segments, separator) {
+  const out = [];
+  segments.forEach((seg, i) => {
+    if (i > 0) out.push({ text: separator });
+    out.push(seg);
+  });
+  return out;
+}
 
 const rows = computed(() => {
   if (!props.report) return [];
@@ -33,14 +44,21 @@ const rows = computed(() => {
     });
   }
 
-  out.push({
-    name: "k-ограниченная",
-    value:
-      r.global_k === null || r.global_k === undefined
-        ? "неограничена (k = ω)"
-        : `k = ${r.global_k}`,
-    note: "количество меток в каждой позиции не превышает некоторое целое k",
-  });
+  if (r.global_k === null || r.global_k === undefined) {
+    out.push({
+      name: "k-ограниченная",
+      value: "неограничена (k = ω)",
+      segments: [{ text: "неограничена" }, { tex: "k = \\omega" }],
+      note: "количество меток в каждой позиции не превышает некоторое целое k",
+    });
+  } else {
+    out.push({
+      name: "k-ограниченная",
+      value: `k = ${r.global_k}`,
+      segments: [{ tex: `k = ${r.global_k}` }],
+      note: "количество меток в каждой позиции не превышает некоторое целое k",
+    });
+  }
 
   const perPlace = r.per_place_k || {};
   const placeKeys = Object.keys(perPlace);
@@ -53,15 +71,33 @@ const rows = computed(() => {
           return k === null || k === undefined ? `${p}: ω` : `${p} ≤ ${k}`;
         })
         .join(", "),
+      segments: interleave(
+        placeKeys.map((p) => {
+          const k = perPlace[p];
+          return k === null || k === undefined
+            ? { tex: `${labelTex(p)} = \\omega` }
+            : { tex: `${labelTex(p)} \\le ${k}` };
+        }),
+        ", "
+      ),
       note: "",
     });
   }
 
-  out.push({
-    name: "Безопасная",
-    value: r.safe ? "да (k = 1)" : "нет",
-    note: "каждая позиция содержит не более одной метки",
-  });
+  if (r.safe) {
+    out.push({
+      name: "Безопасная",
+      value: "да (k = 1)",
+      segments: [{ text: "да" }, { tex: "k = 1" }],
+      note: "каждая позиция содержит не более одной метки",
+    });
+  } else {
+    out.push({
+      name: "Безопасная",
+      value: "нет",
+      note: "каждая позиция содержит не более одной метки",
+    });
+  }
 
   out.push({
     name: "Консервативная",
@@ -75,6 +111,9 @@ const rows = computed(() => {
     value: deadlocks.length
       ? `${deadlocks.length}: ${deadlocks.map((m) => `(${compactTuple(m)})`).join(", ")}`
       : "0 (нет)",
+    segments: deadlocks.length
+      ? [{ text: `${deadlocks.length}:` }, ...interleave(deadlocks.map((m) => ({ tex: markingToTex(m) })), ", ")]
+      : null,
     note: "маркировки, в которых не разрешён ни один переход",
   });
 
@@ -131,6 +170,7 @@ const rows = computed(() => {
     out.push({
       name: "Минимальная маркировка µmin",
       value: `(${(r.mu_min || []).join(", ")})`,
+      segments: [{ tex: markingToTex(r.mu_min) }],
       note: "маркировка минимального срабатывания (по одному разу на переход)",
     });
   }
@@ -159,7 +199,15 @@ const rows = computed(() => {
       <tbody>
         <tr v-for="row in rows" :key="row.name">
           <td class="props-name">{{ row.name }}</td>
-          <td class="props-value">{{ row.value }}</td>
+          <td class="props-value">
+            <template v-if="row.segments">
+              <template v-for="(seg, i) in row.segments" :key="i">
+                <Formula v-if="seg.tex" :tex="seg.tex" />
+                <span v-else>{{ seg.text }}</span>
+              </template>
+            </template>
+            <span v-else>{{ row.value }}</span>
+          </td>
           <td class="props-note">{{ row.note }}</td>
         </tr>
       </tbody>

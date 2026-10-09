@@ -1,0 +1,18 @@
+{
+ "total": 166,
+ "ok": 166,
+ "failed": [],
+ "warnings": 0,
+ "sample": [
+  "(-a1*c2*y0 + a2*c1*y0 - a2*c2*y0p)/(a0*c2**2 - a1*c1*c2 + a2*c1**2)",
+  "(122*sin(t) - cos(t))*exp(3*t)/65 - 18*sin(3*t)/65 + cos(3*t)/65",
+  "(C_1 + C_2*t)*exp(-t)",
+  "(C_1*cos(t) + C_2*sin(t))*exp(3*t)",
+  "(a0*c2*y0 + a2*c1*y0p)/(a0*c2**2 - a1*c1*c2 + a2*c1**2)"
+ ],
+ "generated": "2026-10-09T22:58:35.339912+00:00",
+ "source": "POST http://app:8000/solve TASK-LSS-01..23",
+ "selection": "unique ASCII-only strings from answer + solution[].data (recursive, keys *_tex excluded) containing at least one of: 0-9 + - * / = ^ ( ) . ,",
+ "katex_version": "0.19.0",
+ "unique_strings": 83
+}

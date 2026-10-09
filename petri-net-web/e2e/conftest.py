@@ -52,6 +52,12 @@ def browser():
 @pytest.fixture
 def page(browser):
     new_page = browser.new_page(viewport={"width": 1400, "height": 900})
+    try:
+        new_page.context.grant_permissions(
+            ["clipboard-read", "clipboard-write"], origin=BASE_URL
+        )
+    except Exception:
+        pass
     console_problems: list[str] = []
     new_page.on(
         "console",

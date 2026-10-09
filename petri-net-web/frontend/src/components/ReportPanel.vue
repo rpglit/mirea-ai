@@ -2,6 +2,9 @@
 import { computed, ref } from "vue";
 import { compactTuple, prettyFormula, toast } from "../store";
 import AutomatonCanvas from "./AutomatonCanvas.vue";
+import AnswerValue from "./AnswerValue.vue";
+import Formula from "./Formula.vue";
+import { markingToTex, matrixToTex, MATRIX_KEYS } from "../math/tex";
 
 const props = defineProps({
   report: { type: Object, required: true },
@@ -50,12 +53,14 @@ const answer = computed(() => props.report.answer || {});
 const notes = computed(() => props.report.notes || []);
 
 const givenRows = computed(() =>
-  Object.keys(given.value).map((key) => ({ key, value: given.value[key] }))
+  Object.keys(given.value)
+    .filter((key) => !key.endsWith("_tex"))
+    .map((key) => ({ key, value: given.value[key] }))
 );
 
 const answerRows = computed(() =>
   Object.keys(answer.value)
-    .filter((key) => key !== "graph")
+    .filter((key) => key !== "graph" && !key.endsWith("_tex"))
     .map((key) => ({
       key,
       label: ANSWER_LABELS[key] || key,
@@ -88,33 +93,6 @@ function resetTick() {
   tick.value = -1;
 }
 
-function isMealy(value) {
-  return (
-    value &&
-    typeof value === "object" &&
-    !Array.isArray(value) &&
-    (value.enumeration !== undefined || value.table !== undefined || value.graph !== undefined)
-  );
-}
-
-function isFaTable(value) {
-  return value && typeof value === "object" && Array.isArray(value.cols) && Array.isArray(value.rows);
-}
-
-function isListOfScalars(value) {
-  return (
-    Array.isArray(value) &&
-    value.length &&
-    value.every(
-      (v) => typeof v === "number" || typeof v === "string" || typeof v === "boolean"
-    )
-  );
-}
-
-function isListOfTuples(value) {
-  return Array.isArray(value) && value.length && value.every((v) => Array.isArray(v));
-}
-
 function cellText(val) {
   if (Array.isArray(val)) {
     if (val.length && val.every((x) => Array.isArray(x))) {
@@ -129,13 +107,151 @@ function cellText(val) {
   return prettyFormula(val);
 }
 
-function tupleText(value) {
-  if (Array.isArray(value) && (value.length <= 12 || value.every((v) => typeof v === "number"))) {
-    return `(${compactTuple(value)})`;
+// raw→tex карта: пары (str-значение, *_tex-компаньон) из answer (включая
+// parts-подобъекты) и всех solution[].data; сортировка по длине raw ↓
+const rawTexPairs = computed(() => {
+  const pairs = [];
+  const collect = (node) => {
+    if (Array.isArray(node)) {
+      node.forEach(collect);
+      return;
+    }
+    if (!node || typeof node !== "object") return;
+    for (const key of Object.keys(node)) {
+      if (key.endsWith("_tex")) continue;
+      const tex = node[key + "_tex"];
+      if (tex !== undefined) {
+        const raw = node[key];
+        if (typeof raw === "string" && typeof tex === "string" && raw.length) {
+          pairs.push([raw, tex]);
+        } else if (
+          raw && typeof raw === "object" && !Array.isArray(raw) &&
+          tex && typeof tex === "object" && !Array.isArray(tex)
+        ) {
+          for (const k2 of Object.keys(raw)) {
+            if (typeof raw[k2] === "string" && typeof tex[k2] === "string") {
+              pairs.push([raw[k2], tex[k2]]);
+            }
+          }
+        } else if (
+          Array.isArray(raw) && Array.isArray(tex) &&
+          raw.length === tex.length &&
+          raw.every((x) => typeof x === "string") &&
+          tex.every((x) => typeof x === "string")
+        ) {
+          raw.forEach((r, i) => pairs.push([r, tex[i]]));
+        }
+      }
+      collect(node[key]);
+    }
+  };
+  collect(props.report.answer || {});
+  solution.value.forEach((step) => {
+    if (step && step.data) collect(step.data);
+  });
+  const uniq = new Map();
+  pairs.forEach(([raw, tex]) => {
+    if (!uniq.has(raw)) uniq.set(raw, tex);
+  });
+  return [...uniq.entries()].sort((a, b) => b[0].length - a[0].length);
+});
+
+function splitFormulaText(text, pairs) {
+  let segments = [String(text || "")];
+  for (const [raw, tex] of pairs) {
+    const next = [];
+    for (const seg of segments) {
+      if (seg !== null && typeof seg === "object") {
+        next.push(seg);
+        continue;
+      }
+      const parts = seg.split(raw);
+      for (let i = 0; i < parts.length; i += 1) {
+        if (i > 0) next.push({ tex });
+        next.push(parts[i]);
+      }
+    }
+    segments = next;
   }
-  if (Array.isArray(value)) return value.map((v) => (Array.isArray(v) ? compactTuple(v) : v)).join("; ");
-  return String(value);
+  return segments;
 }
+
+function stepSegments(step) {
+  return splitFormulaText(step.text, rawTexPairs.value);
+}
+
+// строки данных шага: формульные значения — через <Formula>, остальное plain
+function stepDataEntries(step) {
+  const data = step && step.data;
+  if (!data || typeof data !== "object" || Array.isArray(data)) return null;
+  const out = [];
+  for (const key of Object.keys(data)) {
+    if (key.endsWith("_tex")) continue;
+    const val = data[key];
+    const tex = data[key + "_tex"];
+    if (typeof val === "string") {
+      out.push(
+        typeof tex === "string"
+          ? { key, kind: "formula", tex }
+          : { key, kind: "plain", text: cellText(val) }
+      );
+    } else if (Array.isArray(val) && val.length && val.every((x) => Array.isArray(x))) {
+      out.push(
+        MATRIX_KEYS.has(key)
+          ? { key, kind: "formula", tex: matrixToTex(val) }
+          : { key, kind: "plain", text: cellText(val) }
+      );
+    } else if (Array.isArray(val) && val.length && val.every((x) => typeof x === "number" || x === null)) {
+      out.push({ key, kind: "formula", tex: markingToTex(val) });
+    } else if (val !== null && typeof val === "object" && !Array.isArray(val)) {
+      if (
+        tex && typeof tex === "object" && !Array.isArray(tex) &&
+        Object.keys(val).every((k2) => typeof val[k2] === "number" || typeof val[k2] === "string")
+      ) {
+        out.push({
+          key,
+          kind: "dict-formula",
+          rows: Object.keys(val).map((k2) => ({
+            k: k2,
+            tex: tex[k2] !== undefined ? tex[k2] : null,
+            v: val[k2],
+          })),
+        });
+      } else {
+        out.push({ key, kind: "plain", text: cellText(val) });
+      }
+    } else {
+      out.push({ key, kind: "plain", text: cellText(val) });
+    }
+  }
+  return out;
+}
+
+// каталог звеньев (LSS-13/18): строки со скалярными значениями + *_tex
+const CATALOG_COL_LABELS = { title: "Звено", law: "Закон «вход-выход»", phi: "Φ(s)", g: "g(t, τ)" };
+const CATALOG_COLS = ["title", "law", "phi", "g"];
+
+function isLinkCatalog(value) {
+  return (
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.every(
+      (row) =>
+        row &&
+        typeof row === "object" &&
+        !Array.isArray(row) &&
+        Object.values(row).every((v) => v === null || typeof v === "string")
+    ) &&
+    value.some((row) => Object.keys(row).some((k) => k.endsWith("_tex")))
+  );
+}
+
+const catalogCols = computed(() => {
+  const value = answer.value.links;
+  if (!isLinkCatalog(value)) return [];
+  const first = value[0];
+  return CATALOG_COLS.filter((col) => first[col] !== undefined);
+});
 
 // экспорт PNG графа автомата (FR-503)
 async function exportAutomatonPng() {
@@ -169,7 +285,12 @@ async function exportAutomatonPng() {
       <template v-for="row in givenRows" :key="row.key">
         <dt>{{ row.key }}</dt>
         <dd>
-          <pre v-if="typeof row.value === 'string'" class="formula" style="margin: 0">{{
+          <Formula
+            v-if="row.key === 'statement' && typeof given.statement_tex === 'string'"
+            :tex="given.statement_tex"
+            display
+          />
+          <pre v-else-if="typeof row.value === 'string'" class="formula" style="margin: 0">{{
             row.value
           }}</pre>
           <pre v-else-if="row.value !== null && typeof row.value === 'object'" class="formula" style="margin: 0">{{
@@ -190,7 +311,10 @@ async function exportAutomatonPng() {
       <h5 style="margin: 10px 0 2px">
         Шаг {{ step.step }}. {{ step.title }}
       </h5>
-      <pre class="step-text">{{ step.text }}</pre>
+      <pre class="step-text"><template v-for="(seg, i) in stepSegments(step)" :key="i"><Formula
+          v-if="seg !== null && typeof seg === 'object'"
+          :tex="seg.tex"
+        /><template v-else>{{ seg }}</template></template></pre>
       <template v-if="step.data">
         <table
           v-if="step.data.cols !== undefined && step.data.rows !== undefined"
@@ -209,27 +333,36 @@ async function exportAutomatonPng() {
             </tr>
           </tbody>
         </table>
-        <template
-          v-else-if="typeof step.data === 'object' && !Array.isArray(step.data)"
-        >
-          <template v-for="(val, key) in step.data" :key="key">
-            <table v-if="isListOfTuples(val)" class="data-table">
-              <tbody>
-                <tr v-for="(row, i) in val" :key="i">
-                  <td v-for="(cell, j) in row" :key="j">{{
-                    cell === null || cell === undefined ? "—" : prettyFormula(cell)
-                  }}</td>
-                </tr>
-              </tbody>
-            </table>
-            <table v-else class="data-table">
-              <tbody>
-                <tr>
-                  <td style="font-weight: 600">{{ key }}</td>
-                  <td>{{ cellText(val) }}</td>
-                </tr>
-              </tbody>
-            </table>
+        <template v-else-if="stepDataEntries(step)">
+          <template v-for="entry in stepDataEntries(step)" :key="entry.key">
+            <div v-if="entry.kind === 'formula'" class="data-entry">
+              <div class="answer-key">{{ entry.key }}</div>
+              <Formula :tex="entry.tex" display />
+            </div>
+            <div v-else-if="entry.kind === 'dict-formula'" class="data-entry">
+              <div class="answer-key">{{ entry.key }}</div>
+              <table class="data-table">
+                <tbody>
+                  <tr v-for="r in entry.rows" :key="r.k">
+                    <td>
+                      <Formula v-if="r.tex" :tex="r.tex" />
+                      <template v-else>{{ r.k }}</template>
+                    </td>
+                    <td>{{ r.v }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div v-else class="data-entry">
+              <table class="data-table">
+                <tbody>
+                  <tr>
+                    <td style="font-weight: 600">{{ entry.key }}</td>
+                    <td>{{ entry.text }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </template>
         </template>
       </template>
@@ -244,76 +377,24 @@ async function exportAutomatonPng() {
         class="answer-block"
       >
         <div class="answer-key">{{ row.label }}</div>
-        <pre v-if="typeof row.value === 'string'" class="formula">{{
-          prettyFormula(row.value)
-        }}</pre>
-        <span v-else-if="row.value === null">—</span>
-        <span v-else-if="typeof row.value === 'number' || typeof row.value === 'boolean'">{{
-          row.value === true ? "да" : row.value === false ? "нет" : row.value
-        }}</span>
-        <span v-else-if="isFaTable(row.value)">
+        <template v-if="row.key === 'links' && isLinkCatalog(row.value) && catalogCols.length">
           <table class="data-table">
             <thead>
               <tr>
-                <th></th>
-                <th v-for="col in row.value.cols" :key="col">{{ col }}</th>
+                <th v-for="col in catalogCols" :key="col">{{ CATALOG_COL_LABELS[col] || col }}</th>
               </tr>
             </thead>
-            <tbody>
-              <tr v-for="(r, i) in row.value.rows" :key="i">
-                <td>{{ r[0] }}</td>
-                <td v-for="(cell, j) in r.slice(1)" :key="j">{{ cell }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </span>
-        <span v-else-if="isMealy(row.value)">
-          <pre v-if="row.value.enumeration" class="formula">
-{{ row.value.enumeration.join("\n") }}</pre
-          >
-          <table v-if="row.value.table" class="data-table">
-            <thead>
-              <tr>
-                <th></th>
-                <th v-for="col in row.value.table.cols" :key="col">{{ col }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(r, i) in row.value.table.rows" :key="i">
-                <td>{{ r[0] }}</td>
-                <td v-for="(cell, j) in r.slice(1)" :key="j">{{ cell }}</td>
-              </tr>
-            </tbody>
-          </table>
-          <AutomatonCanvas
-            v-if="row.value.graph"
-            :graph="row.value.graph"
-            :registry-key="row.key"
-          />
-        </span>
-        <span v-else-if="Array.isArray(row.value) && !row.value.length">(пусто)</span>
-        <span v-else-if="isListOfScalars(row.value)">{{ tupleText(row.value) }}</span>
-        <span v-else-if="isListOfTuples(row.value)">
-          <table class="data-table">
             <tbody>
               <tr v-for="(r, i) in row.value" :key="i">
-                <td v-for="(cell, j) in r" :key="j">{{
-                  typeof cell === "string" ? prettyFormula(cell) : cell
-                }}</td>
+                <td v-for="col in catalogCols" :key="col">
+                  <Formula v-if="r[col + '_tex']" :tex="r[col + '_tex']" />
+                  <template v-else>{{ r[col] === null ? "—" : r[col] }}</template>
+                </td>
               </tr>
             </tbody>
           </table>
-        </span>
-        <span v-else-if="typeof row.value === 'object'"
-          ><table class="data-table">
-            <tbody>
-              <tr v-for="(val, key) in row.value" :key="key">
-                <td style="font-weight: 600">{{ key }}</td>
-                <td>{{ cellText(val) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </span>
+        </template>
+        <AnswerValue v-else :value="row.value" :key-name="row.key" :container="answer" />
       </div>
       <p v-if="!answerRows.length && !automatonGraph" class="muted">
         Ответ — в шагах решения.

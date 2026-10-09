@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 import sympy as sp
 
 from petrinet.errors import UnknownTaskError, ValidationError
 from petrinet.solvers.report import Report
-from petrinet.solvers.solvers_lss import REGISTRY, solve_lss
+from petrinet.solvers.solvers_lss import _TASKS, REGISTRY, solve_lss
 
 
 def _answer(task_id: str, **spec) -> dict:
@@ -207,3 +209,108 @@ def test_report_structure() -> None:
     assert data["given"]["statement"]
     assert data["find"]
     assert [s["step"] for s in data["solution"]] == list(range(1, len(data["solution"]) + 1))
+
+
+# --- tex fields (iteration 3, MATH_RENDER_PLAN section 4) -------------------------
+
+
+def test_lss08_phi_tex() -> None:
+    a = _answer("TASK-LSS-08")
+    assert a["phi_tex"] == "\\frac{1}{s + 5}"
+    assert a["phi"] == "1/(s + 5)"  # старый ключ не тронут
+
+
+def test_lss01_ode_tex_fields() -> None:
+    a = _answer("TASK-LSS-01")
+    assert "P_tex" in a and a["P_tex"] == "s^{2} + 1"
+    assert "\\left" in a["y_tex"] and "\\frac" in a["y_tex"]
+    assert "\\left" in a["y_h_tex"]  # C_1 cos(t) + C_2 sin(t), без exp
+    assert "^" in a["y_p_tex"]
+    steps = solve_lss("TASK-LSS-01").to_dict()["solution"]
+    data1 = steps[0]["data"]
+    assert data1["roots"] == {"-I": 1, "I": 1}
+    assert data1["roots_tex"] == {"- i": 1, "i": 1}
+    assert steps[1]["data"].get("y_h_tex") == a["y_h_tex"]
+    assert steps[2]["data"].get("y_p_tex") == a["y_p_tex"]
+    assert steps[3]["data"].get("y_tex") == a["y_tex"]
+
+
+def test_lss14_parts_tex() -> None:
+    r = solve_lss("TASK-LSS-14").to_dict()
+    part_a = r["answer"]["а) y(t) при x(t) = cos 3t"]
+    assert "y" in part_a and "y_tex" in part_a
+    part_b = r["answer"]["б) передаточная и частотные характеристики"]
+    # детерминизм: tex == sp.latex от str-значения
+    assert part_b["phi_tex"] == sp.latex(sp.sympify(part_b["phi"]))
+    assert "\\frac" in part_b["phi_tex"]
+    assert "A_tex" in part_b and "phi_f_tex" in part_b
+    assert r["solution"][0]["data"]["roots_tex"] == {"3 - i": 1, "3 + i": 1}
+
+
+def test_lss11_link_tex_fields() -> None:
+    a = _answer("TASK-LSS-11")
+    assert a["law_tex"] == "T y'(t) + y(t) = k x(t)"
+    assert "\\frac" in a["phi_tex"]
+    assert "g_tex" in a and "A_tex" in a and "phi_f_tex" in a
+
+
+def test_lss13_catalog_tex_rows() -> None:
+    rows = {r["name"]: r for r in _answer("TASK-LSS-13")["links"]}
+    assert len(rows) == 11
+    for row in rows.values():
+        assert isinstance(row["law_tex"], str) and row["law_tex"]
+        assert isinstance(row["phi_tex"], str) and row["phi_tex"]
+        assert "g_tex" in row
+    assert rows["following"]["law_tex"] == "y(t) = x(t)"
+    assert rows["integrator"]["phi_tex"] == "\\frac{1}{s}"
+
+
+def test_lss18_impulse_rows_tex() -> None:
+    rows = {r["name"]: r for r in _answer("TASK-LSS-18")["links"]}
+    assert len(rows) == 6
+    assert rows["following"]["g_tex"] == "\\delta\\left(t - \\tau\\right)"
+    assert all(isinstance(r["g_tex"], str) and r["g_tex"] for r in rows.values())
+
+
+def test_lss22_statespace_tex() -> None:
+    a = _answer("TASK-LSS-22")
+    assert a["W_tex"] == "\\frac{c_{1} + c_{2} s}{a_{0} + a_{1} s + a_{2} s^{2}}"
+    eqs = a["x0_equations_tex"]
+    assert isinstance(eqs, list) and len(eqs) == 2
+    assert eqs[0] == "y_{0} = c_{1} x_{1} + c_{2} x_{2}"
+    assert "\\frac" in eqs[1] and "y0p" in eqs[1]
+    assert all(isinstance(e, str) and "**" not in e for e in eqs)
+    assert set(a["x0_tex"]) == {"x1", "x2"}
+
+
+def test_lss23_statespace_tex() -> None:
+    a = _answer("TASK-LSS-23")
+    assert a["W"] == "1/(s + 1)"  # старый ключ не тронут
+    assert a["W_tex"] == "\\frac{1}{s + 1}"
+    assert a["x0_equations_tex"] == ["2 x_{1} + x_{2} = 1", "2 x_{1} + x_{2} = -1"]
+
+
+def test_statement_tex_all_tasks() -> None:
+    assert len(_TASKS) == 23
+    for tid, task in _TASKS.items():
+        tex = task.get("statement_tex")
+        assert isinstance(tex, str) and tex, tid
+        assert "\\" in tex, tid
+        assert "**" not in tex, tid
+
+
+def test_given_statement_tex() -> None:
+    given = solve_lss("TASK-LSS-08").to_dict()["given"]
+    assert given["statement_tex"] == "y^{\\prime}(t) + 5y(t) = x(t)"
+    assert given["statement"]  # старый ключ не тронут
+    # parts-задачи: statement в given не был — statement_tex тоже не появляется
+    given14 = solve_lss("TASK-LSS-14").to_dict()["given"]
+    assert "statement" not in given14 and "statement_tex" not in given14
+
+
+def test_tex_determinism_double_run() -> None:
+    for i in range(1, 24):
+        tid = f"TASK-LSS-{i:02d}"
+        first = json.dumps(solve_lss(tid).to_dict(), sort_keys=True)
+        second = json.dumps(solve_lss(tid).to_dict(), sort_keys=True)
+        assert first == second, tid
