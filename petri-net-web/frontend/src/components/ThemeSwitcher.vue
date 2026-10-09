@@ -13,6 +13,7 @@ function onChange() {
     <select
       class="theme-select"
       aria-label="Тема"
+      title="Горячая клавиша: T"
       v-model="store.theme"
       @change="onChange"
     >

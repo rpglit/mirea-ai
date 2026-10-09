@@ -4,6 +4,7 @@ import { compactTuple } from "../store";
 const props = defineProps({
   active: { type: Array, default: () => [] },
   history: { type: Array, default: () => [] },
+  loading: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(["fire", "undo", "reset", "goto"]);
@@ -33,17 +34,20 @@ function onHistoryClick(step, index) {
 <template>
   <div>
     <div id="active-list" class="transition-buttons">
-      <button
-        v-for="t in active"
-        :key="t"
-        type="button"
-        class="btn-transition"
-        :title="`Сработать ${t} (один клик)`"
-        @click="emit('fire', t)"
-      >
-        {{ t }}
-      </button>
-      <span v-if="!active.length" class="muted">нет разрешённых переходов</span>
+      <template v-if="!loading">
+        <button
+          v-for="t in active"
+          :key="t"
+          type="button"
+          class="btn-transition"
+          :title="`Сработать ${t} (один клик)`"
+          @click="emit('fire', t)"
+        >
+          {{ t }}
+        </button>
+      </template>
+      <span v-if="loading" class="muted">Загрузка…</span>
+      <span v-else-if="!active.length" class="muted">нет разрешённых переходов</span>
     </div>
 
     <div class="step-buttons">
@@ -58,19 +62,20 @@ function onHistoryClick(step, index) {
       </button>
       <button type="button" id="btn-undo" @click="emit('undo')">Отмена</button>
       <button type="button" id="btn-reset" @click="emit('reset')">Сброс</button>
-      <span class="muted">клик по шагу истории восстанавливает его состояние</span>
+      <span class="muted">клик или Enter по шагу истории восстанавливает его состояние</span>
     </div>
 
     <div id="history-list" class="history">
-      <div
+      <button
         v-for="(step, i) in history"
         :key="i"
+        type="button"
         class="history-line"
-        :title="`Шаг ${i + 1}: восстановить состояние (клик)`"
+        :title="`Шаг ${i + 1}: восстановить состояние (Enter)`"
         @click="onHistoryClick(step, i)"
       >
         {{ lineText(step) }}
-      </div>
+      </button>
     </div>
   </div>
 </template>

@@ -9,8 +9,10 @@ ValidationError (422), CapExceededError (413), SolverError (500).
 from __future__ import annotations
 
 import json
+import threading
 from collections import OrderedDict
 from collections.abc import Callable
+from concurrent.futures import Future
 from typing import Any
 
 from petrinet.errors import UnknownTaskError
@@ -24,7 +26,16 @@ from petrinet.solvers.solvers_pn import solve_pn
 from petrinet.solvers.solvers_pn_ext import REGISTRY as PN_EXT_REGISTRY
 from petrinet.solvers.solvers_pn_ext import solve_pn_ext
 
-__all__ = ["CATALOG", "SolveFn", "TaskInfo", "Report", "catalog", "prefill", "solve"]
+__all__ = [
+    "CATALOG",
+    "SolveFn",
+    "TaskInfo",
+    "Report",
+    "catalog",
+    "prefill",
+    "solve",
+    "solve_future",
+]
 
 CATALOG: list[TaskInfo] = PN_REGISTRY + PN_EXT_REGISTRY + LSS_REGISTRY + FA_REGISTRY
 
@@ -37,6 +48,15 @@ SOLVER_TIMEOUT_S = 30
 
 _CACHE_LIMIT = 128
 _solve_cache: OrderedDict[str, Report] = OrderedDict()
+
+# ARCH section 2.6 (audit P1#2): the API endpoint is a sync ``def`` (anyio
+# threadpool), so the heavy computation must never run on the event loop.
+# One lock guards BOTH the LRU cache and the in-flight future registry
+# (review note of D-059); the semaphore caps the number of concurrently
+# running solver workers (daemon threads).
+_solve_lock = threading.Lock()
+_solve_inflight: dict[str, Future[Report]] = {}
+_solve_semaphore = threading.BoundedSemaphore(4)
 
 _CUSTOM_ROUTES: dict[str, Callable[[str, dict[str, Any]], Report]] = {
     "describe": lambda tid, d: solve_pn(tid, d),
@@ -122,24 +142,86 @@ def _jsonable(value: Any) -> Any:
     return value
 
 
+def _cache_key(task_id: str, payload: dict[str, Any]) -> str:
+    """Deterministic (task_id, data) cache key: sorted JSON (ARCH risk 4).
+
+    Example: ``key = _cache_key("TASK-PN-05", {"net": {...}})``.
+    """
+    return json.dumps([task_id, payload], sort_keys=True, default=str)
+
+
 def solve(task_id: str, data: dict[str, Any] | None = None) -> Report:
     """Solve one catalog (or custom) task and return the methodic Report.
 
     Repeated calls with the same (task_id, data) are served from a small
     in-process LRU cache (ARCH risk 4); the cache never grows past
-    ``_CACHE_LIMIT`` entries.
+    ``_CACHE_LIMIT`` entries. All cache access runs under ``_solve_lock``,
+    which also guards the in-flight registry of :func:`solve_future`.
     """
     payload: dict[str, Any] = dict(data or {})
-    cache_key = json.dumps([task_id, payload], sort_keys=True, default=str)
-    cached = _solve_cache.get(cache_key)
-    if cached is not None:
-        _solve_cache.move_to_end(cache_key)
-        return cached
+    key = _cache_key(task_id, payload)
+    with _solve_lock:
+        cached = _solve_cache.get(key)
+        if cached is not None:
+            _solve_cache.move_to_end(key)
+            return cached
     report = _solve_uncached(task_id, payload)
-    _solve_cache[cache_key] = report
-    if len(_solve_cache) > _CACHE_LIMIT:
-        _solve_cache.popitem(last=False)
+    with _solve_lock:
+        _solve_cache[key] = report
+        if len(_solve_cache) > _CACHE_LIMIT:
+            _solve_cache.popitem(last=False)
     return report
+
+
+def solve_future(task_id: str, data: dict[str, Any] | None = None) -> Future[Report]:
+    """Run one solve in a background daemon worker; return its future.
+
+    The worker starts only if an identical (task_id, data) request is not
+    already in flight: concurrent duplicates share one future (in-flight
+    deduplication, ARCH section 2.6). The worker acquires
+    ``_solve_semaphore`` (parallelism cap of 4) before solving; it is never
+    interrupted, so a timed-out caller still gets its report into the LRU
+    cache for the next retry. Example:
+
+        future = solve_future("TASK-PN-05")
+        report = future.result(timeout=SOLVER_TIMEOUT_S)
+    """
+    payload: dict[str, Any] = dict(data or {})
+    key = _cache_key(task_id, payload)
+    with _solve_lock:
+        future = _solve_inflight.get(key)
+        if future is None:
+            future = Future()
+            _solve_inflight[key] = future
+            threading.Thread(
+                target=_solve_worker,
+                args=(key, task_id, payload, future),
+                name=f"petrinet-solve-{task_id}",
+                daemon=True,
+            ).start()
+        return future
+
+
+def _solve_worker(
+    key: str, task_id: str, payload: dict[str, Any], future: Future[Report]
+) -> None:
+    """Daemon worker target: one solve under the parallelism cap.
+
+    Completes ``future`` with the Report or the raised error, then drops
+    the in-flight entry (under ``_solve_lock``). The entry is removed only
+    after the outcome is set, so a duplicate arriving in between reuses the
+    finished future instead of spawning a second worker.
+    """
+    try:
+        with _solve_semaphore:
+            report = solve(task_id, payload)
+    except Exception as exc:
+        future.set_exception(exc)
+    else:
+        future.set_result(report)
+    finally:
+        with _solve_lock:
+            _solve_inflight.pop(key, None)
 
 
 def _solve_uncached(task_id: str, data: dict[str, Any]) -> Report:

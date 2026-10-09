@@ -99,9 +99,26 @@ const rows = computed(() => {
     });
   }
 
+  // API отдаёт conservative как объект {per_transition, constant_sum, conservative}
+  const cons =
+    r.conservative && typeof r.conservative === "object"
+      ? r.conservative
+      : null;
+  const consValue = cons ? Boolean(cons.conservative) : Boolean(r.conservative);
+  let consText = yesNo(consValue);
+  if (!consValue && cons) {
+    const unbalanced = Object.entries(cons.per_transition || {})
+      .filter(([, info]) => info && info.equal === false)
+      .map(([t, info]) => `${t}: ${info.in}≠${info.out}`);
+    if (unbalanced.length) {
+      consText += ` (${unbalanced.join(", ")})`;
+    } else if (cons.constant_sum === false) {
+      consText += " (сумма меток не постоянна)";
+    }
+  }
   out.push({
     name: "Консервативная",
-    value: yesNo(Boolean(r.conservative)),
+    value: consText,
     note: "сумма меток во всех позициях постоянна; на каждом переходе число входных дуг равно числу выходных",
   });
 

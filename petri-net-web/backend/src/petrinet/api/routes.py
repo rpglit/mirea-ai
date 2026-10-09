@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import json
-import signal
-import threading
 from typing import Literal, cast
 
 from fastapi import APIRouter, Response
@@ -14,6 +12,7 @@ from petrinet import parser, solvers
 from petrinet.config import Settings, get_settings
 from petrinet.core import Marking, PetriNet, minimal_marking
 from petrinet.errors import (
+    SolverError,
     TransitionNotEnabledError,
     UnknownSessionError,
     UnsupportedModelError,
@@ -406,33 +405,31 @@ class SolveRequest(BaseModel):
 
 
 @router.post("/solve")
-async def solve_task(body: SolveRequest) -> dict[str, object]:
+def solve_task(body: SolveRequest) -> dict[str, object]:
     """Solve one methodic (or custom) task; respond with the Report.
 
     Stateless: no session is required or created (ARCH section 2.6). The
     response is the methodic report ``{task_id, given, find, solution,
-    answer, notes}`` (keys sorted). The computation is bounded by
-    ``SOLVER_TIMEOUT_S`` (30 s) via SIGALRM on the main thread (the async
-    endpoint runs there); a breach answers 500 ``solver_failed``. Errors:
-    422 ``unknown_task``, 422 ``validation_failed``, 413 ``cap_exceeded``,
-    422 ``unsupported_model``, 409 ``conflict``, 500 ``solver_failed``.
+    answer, notes}`` (keys sorted).
+
+    The endpoint is a sync ``def``: FastAPI runs it in the anyio threadpool,
+    so the event loop stays free while a task solves (audit P1#2). The
+    computation runs in a background daemon worker (up to 4 in parallel,
+    identical in-flight requests share one future) and this thread waits on
+    ``future.result(timeout=SOLVER_TIMEOUT_S)`` (30 s contract, NFR-102).
+    On a timeout the 500 ``solver_failed`` is returned immediately while the
+    worker keeps running; its result lands in the LRU cache, so a retry of
+    the same task is served from the cache. SIGALRM was removed: signals
+    reach only the main thread, so it could not protect worker threads.
+    Errors: 422 ``unknown_task``, 422 ``validation_failed``, 413
+    ``cap_exceeded``, 422 ``unsupported_model``, 409 ``conflict``, 500
+    ``solver_failed``.
     """
-    from petrinet.errors import SolverError
-    from petrinet.solvers import SOLVER_TIMEOUT_S
-
-    def _on_timeout(signum: int, frame: object) -> None:
-        raise SolverError(f"таймаут: вычисления превысили {SOLVER_TIMEOUT_S} с")
-
-    previous: object = None
-    if threading.current_thread() is threading.main_thread():
-        previous = signal.signal(signal.SIGALRM, _on_timeout)
-        signal.alarm(SOLVER_TIMEOUT_S)
+    future = solvers.solve_future(body.task_id, body.data)
     try:
-        report = solvers.solve(body.task_id, body.data)
-    finally:
-        if previous is not None:
-            signal.alarm(0)
-            signal.signal(signal.SIGALRM, previous)  # type: ignore[arg-type]
+        report = future.result(timeout=solvers.SOLVER_TIMEOUT_S)
+    except TimeoutError as exc:
+        raise SolverError(f"таймаут: вычисления превысили {solvers.SOLVER_TIMEOUT_S} с") from exc
     return report.to_dict()
 
 
@@ -802,12 +799,16 @@ def get_session(session_id: str) -> dict[str, object]:
 
     ``graph_built``/``report_computed`` flag whether the stored artifacts
     exist (null -> false); ``current_marking`` is the live interactive state.
+    The extended-model fields ``inhibitors``/``priorities``/``delays``/
+    ``colors`` are added additively from the stored ``model_json`` with the
+    ``POST /parse`` convention (present only when stored) so a reopened
+    session keeps its ⊣ arcs and τ labels (audit P1#3).
     Errors: 404 ``unknown_session``.
     """
     store = get_store()
     row = _load_session(store, session_id)
     model_raw: dict[str, object] = json.loads(cast(str, row["model_json"]))
-    return {
+    result: dict[str, object] = {
         "created_at": row["created_at"],
         "current_marking": json.loads(cast(str, row["current_marking"])),
         "graph_built": row["graph_json"] is not None,
@@ -820,6 +821,10 @@ def get_session(session_id: str) -> dict[str, object]:
         "session_id": session_id,
         "transitions": model_raw.get("transitions"),
     }
+    for key in ("inhibitors", "priorities", "delays", "colors"):
+        if key in model_raw:
+            result[key] = model_raw[key]
+    return result
 
 
 @router.get("/sessions/{session_id}/graph")

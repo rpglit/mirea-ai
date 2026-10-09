@@ -1,0 +1,128 @@
+{
+  "base_url": "http://app:8000",
+  "console": [],
+  "checks": {
+    "double_render_p1_4": {
+      "ok": true,
+      "graph_instance_creates": 1,
+      "expected": 1,
+      "registry_sets_graph": [
+        {
+          "key": "graph",
+          "created": false,
+          "t": 64
+        },
+        {
+          "key": "graph",
+          "created": true,
+          "t": 704
+        }
+      ],
+      "client_total_ms": 1773.2,
+      "prev_client_total_ms": 2830.0
+    },
+    "conservative_p0_smoke": {
+      "ok": true,
+      "value": "нет (t1: 2≠1, t3: 1≠3, t4: 4≠2)",
+      "expected": "«нет» + разбивка t1: 2≠1"
+    },
+    "loading_state_p2": {
+      "ok": true,
+      "samples_before_first_state": [
+        {
+          "t": 17,
+          "btns": -1,
+          "muted": null
+        },
+        {
+          "t": 95,
+          "btns": 0,
+          "muted": "Загрузка…"
+        }
+      ],
+      "state_responses": [
+        {
+          "t": 1595,
+          "status": 200
+        }
+      ],
+      "saw_loading": true,
+      "fake_empty_before_first_state": false
+    },
+    "keyboard_p1_6": {
+      "ok": true,
+      "tab_reached_history_line": true,
+      "focus_ring": true,
+      "labels_m2": [
+        "p1 (4)",
+        "p2 (5)",
+        "p3 (4)",
+        "p4 (5)",
+        "p5 (4)",
+        "p6 (2)",
+        "t1",
+        "t2",
+        "t3",
+        "t4",
+        "t5"
+      ],
+      "labels_after_enter": [
+        "p1 (5)",
+        "p2 (5)",
+        "p3 (2)",
+        "p4 (5)",
+        "p5 (4)",
+        "p6 (3)",
+        "t1",
+        "t2",
+        "t3",
+        "t4",
+        "t5"
+      ],
+      "labels_m1": [
+        "p1 (5)",
+        "p2 (5)",
+        "p3 (2)",
+        "p4 (5)",
+        "p5 (4)",
+        "p6 (3)",
+        "t1",
+        "t2",
+        "t3",
+        "t4",
+        "t5"
+      ],
+      "restored": true
+    },
+    "overflow_mobile375_p1_5": {
+      "ok": true,
+      "scroll": 375,
+      "inner": 375,
+      "client": 375
+    },
+    "overflow_tablet768_p1_5": {
+      "ok": true,
+      "scroll": 768,
+      "inner": 768,
+      "client": 768
+    },
+    "resize_refit_p2": {
+      "ok": true,
+      "zoom_before": 0.10236582896069225,
+      "zoom_after_700x600": 0.05
+    },
+    "hotkeys_p2": {
+      "ok": true,
+      "press_2_shows_home": true,
+      "press_1_shows_net": true,
+      "theme_before": "light",
+      "theme_after_t": "tokyo-night"
+    },
+    "conservative_p0_cycle_da": {
+      "ok": true,
+      "value": "да",
+      "expected": "да"
+    }
+  },
+  "console_clean": true
+}

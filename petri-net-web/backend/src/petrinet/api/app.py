@@ -57,6 +57,29 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         request.state.started_at = time.perf_counter()
         return await call_next(request)
 
+    @app.middleware("http")
+    async def _static_cache_control(
+        request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
+        """Add Cache-Control to the static frontend (ARCH section 2.6, audit P2#7).
+
+        A middleware rather than a StaticFiles subclass: the internal
+        ``StaticFiles`` API is version-dependent, while the HTTP middleware
+        interface is stable and testable over plain HTTP. Vite content-hashed
+        files under ``/assets/`` are immutable for a year; the SPA entry
+        (``/`` and ``/index.html``) stays ``no-cache`` so a new build is
+        picked up immediately; API routes and error responses are untouched.
+        """
+        response = await call_next(request)
+        if response.status_code >= 400:
+            return response
+        path = request.url.path
+        if path.startswith("/assets/"):
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        elif path in ("/", "/index.html"):
+            response.headers["Cache-Control"] = "no-cache"
+        return response
+
     def _duration_ms(request: Request) -> int:
         """Milliseconds elapsed since the request started (0 if unknown)."""
         started = getattr(request.state, "started_at", None)

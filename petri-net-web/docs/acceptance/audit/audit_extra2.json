@@ -3,115 +3,115 @@
   "sections": {
     "event_loop_block_sampled": {
       "healthz_baseline_ms": [
+        1.4,
         1.1,
-        0.9,
-        0.9,
-        0.7,
-        0.8
+        1.2,
+        1.0,
+        1.0
       ],
       "runs": [
         {
           "task": "TASK-LSS-20",
-          "solve_ms": 148.7,
-          "max_probe_ms": 119.3,
-          "median_probe_ms": 119.3,
-          "n_samples": 1,
+          "solve_ms": 142.8,
+          "max_probe_ms": 54.3,
+          "median_probe_ms": 54.3,
+          "n_samples": 2,
           "worsened_vs_baseline": true
         },
         {
           "task": "TASK-LSS-10",
-          "solve_ms": 542.8,
-          "max_probe_ms": 513.4,
-          "median_probe_ms": 513.4,
-          "n_samples": 1,
+          "solve_ms": 948.7,
+          "max_probe_ms": 96.7,
+          "median_probe_ms": 43.0,
+          "n_samples": 17,
           "worsened_vs_baseline": true
         },
         {
           "task": "TASK-PN-08",
-          "solve_ms": 164.4,
-          "max_probe_ms": 135.1,
-          "median_probe_ms": 135.1,
-          "n_samples": 1,
+          "solve_ms": 157.6,
+          "max_probe_ms": 58.2,
+          "median_probe_ms": 48.2,
+          "n_samples": 3,
           "worsened_vs_baseline": true
         }
       ]
     },
     "mobile375_cause": {
       "vw": 375,
-      "pageScrollW": 504,
+      "pageScrollW": 375,
       "wide": [
         {
-          "sel": "html",
-          "w": "inner-overflow:504>375"
+          "sel": "span.formula",
+          "w": "inner-overflow:55>48"
         },
         {
-          "sel": "body",
-          "w": "inner-overflow:504>375"
+          "sel": "span.katex-mathml",
+          "w": "inner-overflow:37>1"
         },
         {
-          "sel": "#app",
-          "w": "inner-overflow:488>343"
+          "sel": "span.formula",
+          "w": "inner-overflow:61>54"
         },
         {
-          "sel": "div.net-view",
-          "w": "inner-overflow:488>343"
+          "sel": "span.katex-mathml",
+          "w": "inner-overflow:45>1"
         },
         {
-          "sel": "#analysis",
-          "w": "inner-overflow:488>343"
+          "sel": "span.formula",
+          "w": "inner-overflow:54>47"
         },
         {
-          "sel": "#props-panel",
-          "w": "inner-overflow:488>343"
+          "sel": "span.katex-mathml",
+          "w": "inner-overflow:38>1"
         },
         {
-          "sel": "div",
-          "w": "inner-overflow:488>343"
+          "sel": "span.formula",
+          "w": "inner-overflow:61>54"
         },
         {
-          "sel": "#props.props-table",
-          "w": 488
+          "sel": "span.katex-mathml",
+          "w": "inner-overflow:45>1"
         },
         {
-          "sel": "thead",
-          "w": 487
+          "sel": "span.formula",
+          "w": "inner-overflow:61>54"
         },
         {
-          "sel": "tr",
-          "w": 487
+          "sel": "span.katex-mathml",
+          "w": "inner-overflow:45>1"
         },
         {
-          "sel": "tbody",
-          "w": 487
+          "sel": "span.formula",
+          "w": "inner-overflow:54>47"
         },
         {
-          "sel": "tr",
-          "w": 487
+          "sel": "span.katex-mathml",
+          "w": "inner-overflow:38>1"
         },
         {
-          "sel": "tr",
-          "w": 487
+          "sel": "span.formula",
+          "w": "inner-overflow:61>54"
         },
         {
-          "sel": "tr",
-          "w": 487
+          "sel": "span.katex-mathml",
+          "w": "inner-overflow:45>1"
         },
         {
-          "sel": "tr",
-          "w": 487
+          "sel": "span.formula",
+          "w": "inner-overflow:106>99"
         }
       ],
       "bodyKids": [
         {
           "sel": "#app",
           "offsetW": 343,
-          "scrollW": 488
+          "scrollW": 343
         }
       ]
     },
     "transient_state_after_stats": {
       "active": 0,
-      "muted": "нет разрешённых переходов",
+      "muted": "Загрузка…",
       "btnStepDisabled": true
     },
     "deadlock_state": {

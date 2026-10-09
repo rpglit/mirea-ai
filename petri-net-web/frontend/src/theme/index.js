@@ -4,7 +4,7 @@
 import { computed, ref } from "vue";
 
 const STORAGE_KEY = "pn-theme";
-const THEME_IDS = [
+export const THEME_IDS = [
   "light",
   "dark",
   "system",

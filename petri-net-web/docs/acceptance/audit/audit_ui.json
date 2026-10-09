@@ -3,37 +3,37 @@
   "console": [],
   "sections": {
     "perf_full_1503": {
-      "client_total_ms": 2696.5,
+      "client_total_ms": 1789.6,
       "net_endpoints": [
         {
           "url": "/catalog",
           "status": 200,
-          "ms": 7
+          "ms": 8
         },
         {
           "url": "/sessions?limit=50",
           "status": 200,
-          "ms": 53
+          "ms": 79
         },
         {
           "url": "/parse",
           "status": 201,
-          "ms": 9
+          "ms": 8
         },
         {
           "url": "/graph",
           "status": 200,
-          "ms": 70
+          "ms": 65
         },
         {
           "url": "/properties",
           "status": 200,
-          "ms": 1243
+          "ms": 1174
         },
         {
-          "url": "/state/8e12d55f21c54f8e886ec6195fcd98bf",
+          "url": "/state/86a3f4011a70412894d1c26799549d28",
           "status": 200,
-          "ms": 1079
+          "ms": 29
         }
       ],
       "net_canvas_nodes": 11,
@@ -42,69 +42,54 @@
         {
           "key": "net",
           "created": false,
-          "t": 47
+          "t": 56
         },
         {
           "key": "graph",
           "created": false,
-          "t": 47
+          "t": 56
         },
         {
           "key": "net",
           "created": true,
-          "t": 243
+          "t": 270
         },
         {
           "key": "graph",
           "created": true,
-          "t": 800
-        },
-        {
-          "key": "graph",
-          "created": true,
-          "t": 2000
+          "t": 794
         }
       ]
     },
     "perf_rebuild_1503": {
-      "client_total_ms": 1141.5,
+      "client_total_ms": 1425.1,
       "new_registry_sets": [
         {
           "key": "graph",
           "created": false,
-          "t": 3392
-        },
-        {
-          "key": "graph",
-          "created": false,
-          "t": 3392
+          "t": 2534
         },
         {
           "key": "graph",
           "created": true,
-          "t": 3876
-        },
-        {
-          "key": "graph",
-          "created": true,
-          "t": 4912
+          "t": 3146
         }
       ],
       "netlog": [
         {
           "url": "/properties",
           "status": 200,
-          "ms": 1243
+          "ms": 1174
         },
         {
           "url": "/graph",
           "status": 200,
-          "ms": 61
+          "ms": 80
         },
         {
           "url": "/properties",
           "status": 200,
-          "ms": 1019
+          "ms": 1236
         }
       ]
     },
@@ -124,9 +109,9 @@
         "h": 667
       },
       "overflow": {
-        "scroll": 504,
+        "scroll": 375,
         "client": 375,
-        "overflow": true
+        "overflow": false
       },
       "net_canvas_box": {
         "w": 166,
@@ -150,21 +135,21 @@
     },
     "window_resize": {
       "extent_before": {
-        "x1": -2164.2335526315787,
-        "x2": 3338.733552631579,
-        "y1": -1311.9103618421052,
-        "y2": 2064.9103618421054,
-        "w": 5502.967105263158,
-        "h": 3376.820723684211
+        "x1": -2421.56654676259,
+        "x2": 3596.06654676259,
+        "y1": -1469.8192446043167,
+        "y2": 2222.8192446043167,
+        "w": 6017.63309352518,
+        "h": 3692.6384892086335
       },
       "after_700x600": {
         "extent": {
-          "x1": -2164.2335526315787,
-          "x2": 748.0509868421053,
-          "y1": -1311.9103618421052,
-          "y2": 2064.9103618421054,
-          "w": 2912.284539473684,
-          "h": 3376.820723684211
+          "x1": -2672.7499999999995,
+          "x2": 3847.25,
+          "y1": -3403.5,
+          "y2": 4156.499999999999,
+          "w": 6520,
+          "h": 7559.999999999999
         },
         "canvas_w": 328
       },
@@ -204,12 +189,12 @@
         {
           "url": "/sessions?limit=50",
           "status": 200,
-          "ms": 36
+          "ms": 57
         },
         {
           "url": "/parse",
           "status": 201,
-          "ms": 11
+          "ms": 10
         },
         {
           "url": "/graph",
@@ -219,12 +204,12 @@
         {
           "url": "/properties",
           "status": 200,
-          "ms": 23
+          "ms": 35
         },
         {
-          "url": "/state/7813ee890bb44766ab1f99dff9d8aa29",
+          "url": "/state/2eec02623a4a446681add93fb958ca84",
           "status": 200,
-          "ms": 19
+          "ms": 10
         }
       ],
       "net_canvas_nodes": 64,

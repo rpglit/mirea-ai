@@ -237,6 +237,24 @@ function restyleTheme() {
   cy.style(style(GRAPH_PALETTES[effectiveTheme()]));
 }
 
+function fitNow() {
+  if (!cy || !el.value) return;
+  const rect = el.value.getBoundingClientRect();
+  if (!rect || (rect.width === 0 && rect.height === 0)) return;
+  try {
+    cy.resize();
+    cy.fit(undefined, 30);
+  } catch (err) {
+    // канвас может быть скрыт (v-show) или разрушаться — следующий render починит
+  }
+}
+
+let resizeTimer = 0;
+function onWindowResize() {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(fitNow, 200);
+}
+
 watch(effectiveTheme, restyleTheme);
 watch(() => props.net, render, { deep: true });
 watch(() => props.marking, () => {
@@ -246,9 +264,14 @@ watch(() => props.marking, () => {
 watch(() => props.active, applyActive);
 watch(() => props.firing, applyFiring);
 
-onMounted(render);
+onMounted(() => {
+  render();
+  window.addEventListener("resize", onWindowResize);
+});
 
 onBeforeUnmount(() => {
+  window.removeEventListener("resize", onWindowResize);
+  clearTimeout(resizeTimer);
   clearTimeout(fireTimer);
   if (cy) {
     if (window.Registry.net === cy) window.Registry.net = null;

@@ -23,6 +23,7 @@ export const store = reactive({
   marking: null,
   active: [],
   history: [],
+  stateLoaded: false,
   structure: null,
   structureKind: null,
   graphStats: null,

@@ -38,6 +38,7 @@ async function refreshStateView() {
   store.marking = st.current_marking;
   store.active = st.active_transitions || [];
   store.history = st.history || [];
+  store.stateLoaded = true;
 }
 
 async function buildGraphAndProps() {
@@ -151,6 +152,7 @@ async function run(format, payload, name) {
   store.marking = resp.initial_marking || null;
   store.active = [];
   store.history = [];
+  store.stateLoaded = false;
   store.structure = null;
   store.structureKind = null;
   store.graphStats = null;
@@ -225,6 +227,7 @@ function clearAnalysisView() {
   store.marking = null;
   store.active = [];
   store.history = [];
+  store.stateLoaded = false;
   store.structure = null;
   store.structureKind = null;
   store.graphStats = null;
@@ -244,6 +247,7 @@ async function loadSession(sessionId) {
     store.marking = summary.current_marking || null;
     store.active = [];
     store.history = [];
+    store.stateLoaded = false;
     store.structure = null;
     store.structureKind = null;
     store.graphStats = null;
@@ -352,6 +356,7 @@ watch(
         <StepPanel
           :active="store.active"
           :history="store.history"
+          :loading="!store.stateLoaded"
           @fire="fireTransition"
           @undo="stepAction('undo', null)"
           @reset="stepAction('reset', null)"

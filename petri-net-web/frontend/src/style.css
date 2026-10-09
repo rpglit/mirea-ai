@@ -310,9 +310,19 @@ button.primary:hover:not(:disabled) {
   background: var(--pn-surface);
 }
 
-.history-line {
+/* Строка истории — настоящий <button> (аудит #6): Tab+Enter работают,
+   :focus-visible — общий контур из начала файла. */
+button.history-line {
+  display: block;
+  width: 100%;
+  margin: 0;
   padding: 2px 4px;
+  border: none;
   border-radius: 4px;
+  background: none;
+  color: var(--pn-fg);
+  font: inherit;
+  text-align: left;
   cursor: pointer;
 }
 
@@ -320,9 +330,12 @@ button.primary:hover:not(:disabled) {
   background: var(--pn-surface-2);
 }
 
-/* Панель свойств (BUG-4): таблица «Свойство → Значение → Пояснение» */
+/* Панель свойств (BUG-4): таблица «Свойство → Значение → Пояснение».
+   overflow-x: auto — на узких экранах таблица скроллится внутри панели,
+   страница не растёт вширь (аудит #5). */
 #props-panel {
   margin-top: 16px;
+  overflow-x: auto;
 }
 
 .props-table {
@@ -345,13 +358,18 @@ button.primary:hover:not(:disabled) {
 
 .props-table td.props-name {
   font-weight: 600;
-  white-space: nowrap;
 }
 
 .props-table td.props-value {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   min-width: 160px;
+}
+
+@media (max-width: 600px) {
+  .props-table td.props-value {
+    min-width: 120px;
+  }
 }
 
 .props-table td.props-note {

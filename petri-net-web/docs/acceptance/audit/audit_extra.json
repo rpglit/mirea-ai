@@ -4,20 +4,25 @@
     "event_loop_block_fresh": {
       "solve": {
         "status": 200,
-        "ms": 149.3
+        "ms": 823.1
       },
       "healthz_probes_ms_during_solve": [
-        30.0
+        49.0,
+        44.2,
+        33.2,
+        42.8,
+        27.5,
+        38.0
       ],
       "blocked": false
     },
     "mobile375_overflow_elements": {
-      "scrollWidth": 504,
+      "scrollWidth": 375,
       "clientWidth": 375,
       "elements": []
     },
     "keyboard_tab_order_full": {
-      "count": 8,
+      "count": 9,
       "sequence": [
         {
           "sel": "button.tab.active",
@@ -28,6 +33,11 @@
           "sel": "button.tab",
           "ring": true,
           "text": "Задание из практикум"
+        },
+        {
+          "sel": "select.theme-select",
+          "ring": true,
+          "text": "СветлаяТёмнаяСистемн"
         },
         {
           "sel": "input#session-name",
@@ -63,6 +73,7 @@
       "first_ten": [
         "button.tab.active",
         "button.tab",
+        "select.theme-select",
         "input#session-name",
         "button#tab-text",
         "button#tab-json",
@@ -80,9 +91,9 @@
     "deadlock_state": {
       "clicked_deadlock_node": false,
       "state": {
-        "active": 0,
-        "muted": "нет разрешённых переходов",
-        "btnStepDisabled": true
+        "active": 5,
+        "muted": null,
+        "btnStepDisabled": false
       }
     }
   }

@@ -177,6 +177,37 @@ function render() {
   runLayout();
 }
 
+// Лёгкое обновление тупиков без пересоздания графа (аудит #4):
+// только data-флаг + класс на существующих узлах.
+function applyDeadlocks() {
+  if (!cy) return;
+  const list = Array.isArray(props.deadlocks) ? props.deadlocks : [];
+  const deadlockSet = new Set(list.map((m) => JSON.stringify(m)));
+  cy.nodes().forEach((node) => {
+    const isDeadlock = deadlockSet.has(JSON.stringify(node.data("marking")));
+    node.data("deadlock", isDeadlock);
+    node.toggleClass("deadlock", isDeadlock);
+  });
+}
+
+function fitNow() {
+  if (!cy || !el.value) return;
+  const rect = el.value.getBoundingClientRect();
+  if (!rect || (rect.width === 0 && rect.height === 0)) return;
+  try {
+    cy.resize();
+    cy.fit(undefined, 30);
+  } catch (err) {
+    // канвас может быть скрыт (v-show) или разрушаться — следующий render починит
+  }
+}
+
+let resizeTimer = 0;
+function onWindowResize() {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(fitNow, 200);
+}
+
 function applyCurrent() {
   if (!cy || !props.current) return;
   let found = null;
@@ -196,11 +227,16 @@ function applyCurrent() {
 watch(effectiveTheme, restyleTheme);
 watch(() => props.structure, render);
 watch(() => props.current, applyCurrent);
-watch(() => props.deadlocks, render);
+watch(() => props.deadlocks, applyDeadlocks);
 
-onMounted(render);
+onMounted(() => {
+  render();
+  window.addEventListener("resize", onWindowResize);
+});
 
 onBeforeUnmount(() => {
+  window.removeEventListener("resize", onWindowResize);
+  clearTimeout(resizeTimer);
   if (cy) {
     if (window.Registry.graph === cy) window.Registry.graph = null;
     cy.destroy();
