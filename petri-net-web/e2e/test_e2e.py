@@ -249,3 +249,24 @@ def test_e2e10_math_render(page: Page) -> None:
     page.screenshot(path=str(math_dir / "e2e-10-pn05.png"), full_page=True)
 
 
+def test_e2e9_theme_switching(page: Page) -> None:
+    """E2E-9: темы (итерация 3) — дефолт light, переключение, persistence, restyle без re-layout."""
+    page.goto(BASE_URL)
+    page.wait_for_selector(".theme-select")
+    # дефолт: system + светлая OS в headless → effective light
+    assert page.evaluate("() => document.documentElement.dataset.theme") == "light"
+    analyze_via_text(page)
+    page.evaluate("() => { window.__net_ref = window.Registry.net; }")
+    page.select_option(".theme-select", "dark")
+    assert page.evaluate("() => document.documentElement.dataset.theme") == "dark"
+    assert page.evaluate("() => window.Registry.net === window.__net_ref") is True
+    assert page.evaluate("() => localStorage.getItem('pn-theme')") == "dark"
+    page.select_option(".theme-select", "tokyo-night")
+    assert page.evaluate("() => document.documentElement.dataset.theme") == "tokyo-night"
+    page.reload()
+    page.wait_for_selector(".theme-select")
+    assert page.evaluate("() => document.documentElement.dataset.theme") == "tokyo-night"
+    page.select_option(".theme-select", "light")
+    assert page.evaluate("() => document.documentElement.dataset.theme") == "light"
+
+

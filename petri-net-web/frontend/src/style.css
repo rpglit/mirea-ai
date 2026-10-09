@@ -1,10 +1,4 @@
-/* Сети Петри — светлая тема, раунд 2 (Vue 3) */
-
-:root {
-  --pn-formula-bg: #f6f8fa;
-  --pn-formula-fg: #222222;
-  --pn-formula-border: #e8e8e8;
-}
+/* Сети Петри — стили (цвета только через токены, значения — theme/tokens.css) */
 
 * {
   box-sizing: border-box;
@@ -17,8 +11,13 @@ body {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   font-size: 15px;
   line-height: 1.4;
-  color: #222;
-  background: #fff;
+  color: var(--pn-fg);
+  background: var(--pn-bg);
+}
+
+:focus-visible {
+  outline: 2px solid var(--pn-focus-ring);
+  outline-offset: 2px;
 }
 
 header {
@@ -45,7 +44,7 @@ h4 {
 
 #session-badge {
   font-size: 0.9em;
-  color: #555;
+  color: var(--pn-muted);
   font-weight: 600;
 }
 
@@ -53,6 +52,20 @@ h4 {
 .view-tabs {
   display: flex;
   gap: 8px;
+}
+
+/* Переключатель темы */
+.theme-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9em;
+  color: var(--pn-muted);
+}
+
+.theme-select {
+  padding: 4px 6px;
+  font-size: 0.9em;
 }
 
 /* Вкладки ввода */
@@ -64,17 +77,17 @@ h4 {
 
 .tab {
   padding: 6px 14px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--pn-border);
   border-radius: 6px;
-  background: #f5f5f5;
+  background: var(--pn-surface);
   font-size: 0.95em;
   cursor: pointer;
 }
 
 .tab.active {
-  background: #2563eb;
-  border-color: #2563eb;
-  color: #fff;
+  background: var(--pn-accent);
+  border-color: var(--pn-accent);
+  color: var(--pn-accent-contrast);
 }
 
 .input-panel label,
@@ -89,21 +102,24 @@ h4 {
 textarea {
   width: 100%;
   padding: 8px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--pn-border);
   border-radius: 6px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.9em;
   resize: vertical;
+  background: var(--pn-input-bg);
+  color: var(--pn-fg);
 }
 
 input,
 select {
   padding: 6px 8px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--pn-border);
   border-radius: 6px;
   font-size: 0.95em;
   font-family: inherit;
-  background: #fff;
+  background: var(--pn-input-bg);
+  color: var(--pn-fg);
 }
 
 input[type="number"] {
@@ -138,7 +154,7 @@ input[type="number"] {
 }
 
 .arc-remove {
-  color: #b00020;
+  color: var(--pn-error);
   padding: 4px 8px;
 }
 
@@ -149,16 +165,17 @@ input[type="number"] {
 /* Кнопки */
 button {
   padding: 6px 12px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--pn-border);
   border-radius: 6px;
-  background: #f5f5f5;
+  background: var(--pn-surface);
+  color: var(--pn-fg);
   font-size: 0.95em;
   font-family: inherit;
   cursor: pointer;
 }
 
 button:hover:not(:disabled) {
-  background: #ebebeb;
+  background: var(--pn-surface-2);
 }
 
 button:disabled {
@@ -167,13 +184,13 @@ button:disabled {
 }
 
 button.primary {
-  background: #2563eb;
-  border-color: #2563eb;
-  color: #fff;
+  background: var(--pn-accent);
+  border-color: var(--pn-accent);
+  color: var(--pn-accent-contrast);
 }
 
 button.primary:hover:not(:disabled) {
-  background: #1d4ed8;
+  background: var(--pn-accent-hover);
 }
 
 .run-buttons {
@@ -185,7 +202,7 @@ button.primary:hover:not(:disabled) {
 
 /* Строка статуса */
 .status {
-  color: #555;
+  color: var(--pn-muted);
   font-size: 0.9em;
 }
 
@@ -211,19 +228,19 @@ button.primary:hover:not(:disabled) {
 
 .canvas {
   height: 380px;
-  border: 1px solid #ccc;
-  background: #fff;
+  border: 1px solid var(--pn-border);
+  background: var(--pn-canvas-bg);
 }
 
 .canvas.active-canvas {
-  border-color: #2563eb;
+  border-color: var(--pn-border-strong);
 }
 
 .canvas-caption {
   margin-top: 4px;
   text-align: center;
   font-size: 0.9em;
-  color: #555;
+  color: var(--pn-muted);
 }
 
 #build-row,
@@ -249,7 +266,7 @@ button.primary:hover:not(:disabled) {
 }
 
 .muted {
-  color: #888;
+  color: var(--pn-muted);
   font-size: 0.9em;
 }
 
@@ -267,17 +284,18 @@ button.primary:hover:not(:disabled) {
 
 .btn-transition {
   padding: 4px 10px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--pn-border);
   border-radius: 4px;
-  background: #fff;
+  background: var(--pn-input-bg);
+  color: var(--pn-fg);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.9em;
   cursor: pointer;
 }
 
 .btn-transition:hover {
-  background: #e8f5e9;
-  border-color: #4caf50;
+  background: var(--pn-btn-hover-bg);
+  border-color: var(--pn-btn-hover-border);
 }
 
 .history {
@@ -285,11 +303,11 @@ button.primary:hover:not(:disabled) {
   overflow: auto;
   margin-top: 8px;
   padding: 6px 8px;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--pn-border);
   border-radius: 6px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.85em;
-  background: #fafafa;
+  background: var(--pn-surface);
 }
 
 .history-line {
@@ -299,7 +317,7 @@ button.primary:hover:not(:disabled) {
 }
 
 .history-line:hover {
-  background: #e3f2fd;
+  background: var(--pn-surface-2);
 }
 
 /* Панель свойств (BUG-4): таблица «Свойство → Значение → Пояснение» */
@@ -314,7 +332,7 @@ button.primary:hover:not(:disabled) {
 
 .props-table th,
 .props-table td {
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--pn-table-border);
   padding: 5px 8px;
   text-align: left;
   vertical-align: top;
@@ -322,7 +340,7 @@ button.primary:hover:not(:disabled) {
 }
 
 .props-table th {
-  background: #f5f7fa;
+  background: var(--pn-table-header-bg);
 }
 
 .props-table td.props-name {
@@ -337,18 +355,19 @@ button.primary:hover:not(:disabled) {
 }
 
 .props-table td.props-note {
-  color: #666;
+  color: var(--pn-muted);
   font-size: 0.92em;
 }
 
 .props-table details summary {
   cursor: pointer;
-  color: #2563eb;
+  color: var(--pn-accent);
 }
 
 .caveat {
-  background: #fff3cd;
-  border: 1px solid #ffe08a;
+  background: var(--pn-warning-bg);
+  border: 1px solid var(--pn-warning-border);
+  color: var(--pn-warning-fg);
   padding: 6px;
   border-radius: 4px;
   margin-bottom: 8px;
@@ -372,7 +391,7 @@ button.primary:hover:not(:disabled) {
   gap: 8px;
   flex-wrap: wrap;
   padding: 4px 0;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--pn-border-soft);
 }
 
 .session-item {
@@ -387,7 +406,7 @@ button.primary:hover:not(:disabled) {
 }
 
 .session-item:hover {
-  background: #e3f2fd;
+  background: var(--pn-surface-2);
 }
 
 .session-item.current .session-name {
@@ -402,12 +421,12 @@ button.primary:hover:not(:disabled) {
 }
 
 .session-date {
-  color: #888;
+  color: var(--pn-muted);
   font-size: 0.85em;
 }
 
 .session-remove {
-  color: #b00020;
+  color: var(--pn-error);
   padding: 2px 8px;
 }
 
@@ -416,8 +435,8 @@ button.primary:hover:not(:disabled) {
   position: fixed;
   bottom: 16px;
   right: 16px;
-  background: #333;
-  color: #fff;
+  background: var(--pn-toast-bg);
+  color: var(--pn-toast-fg);
   padding: 10px 14px;
   border-radius: 6px;
   max-width: 460px;
@@ -425,7 +444,7 @@ button.primary:hover:not(:disabled) {
 }
 
 .toast.error {
-  background: #b00020;
+  background: var(--pn-toast-error-bg);
 }
 
 .hidden {
@@ -451,20 +470,20 @@ button.primary:hover:not(:disabled) {
   max-height: 60vh;
   overflow: auto;
   padding: 4px;
-  border: 1px solid #eee;
+  border: 1px solid var(--pn-border-soft);
   border-radius: 6px;
 }
 
 .task-card {
-  border: 1px solid #ddd;
+  border: 1px solid var(--pn-border);
   border-radius: 6px;
   padding: 10px;
-  background: #fafbfc;
+  background: var(--pn-surface);
 }
 
 .task-card.selected {
-  border-color: #2563eb;
-  background: #eff6ff;
+  border-color: var(--pn-border-strong);
+  background: var(--pn-surface-2);
 }
 
 .task-card h3 {
@@ -473,7 +492,7 @@ button.primary:hover:not(:disabled) {
 }
 
 .task-card .task-meta {
-  color: #777;
+  color: var(--pn-muted);
   font-size: 0.85em;
   margin: 0 0 8px;
 }
@@ -484,7 +503,7 @@ button.primary:hover:not(:disabled) {
 
 .solver {
   margin-top: 16px;
-  border-top: 2px solid #e0e0e0;
+  border-top: 2px solid var(--pn-table-border);
   padding-top: 8px;
 }
 
@@ -513,8 +532,8 @@ button.primary:hover:not(:disabled) {
 .step-text {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.9em;
-  background: #f6f8fa;
-  border: 1px solid #e8e8e8;
+  background: var(--pn-formula-bg);
+  border: 1px solid var(--pn-formula-border);
   border-radius: 4px;
   padding: 8px;
   margin: 6px 0;
@@ -529,14 +548,14 @@ button.primary:hover:not(:disabled) {
 
 .report table.data-table th,
 .report table.data-table td {
-  border: 1px solid #ddd;
+  border: 1px solid var(--pn-border);
   padding: 3px 8px;
   font-size: 0.88em;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 .report table.data-table th {
-  background: #f5f7fa;
+  background: var(--pn-table-header-bg);
 }
 
 .answer-block {
@@ -616,7 +635,7 @@ span.formula:focus-within .formula__copy {
 
 .formula__copy:focus-visible {
   opacity: 1;
-  outline: 2px solid var(--pn-accent, #2563eb);
+  outline: 2px solid var(--pn-focus-ring);
   outline-offset: 1px;
 }
 

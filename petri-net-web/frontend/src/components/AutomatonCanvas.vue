@@ -1,6 +1,8 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import cytoscape from "cytoscape";
+import { effectiveTheme } from "../theme";
+import { GRAPH_PALETTES } from "../theme/palettes";
 
 const props = defineProps({
   graph: { type: Object, default: null },
@@ -15,6 +17,77 @@ function nodeLabel(state) {
   const found = (props.graph.nodes || []).find((n) => n[0] === state);
   if (!found) return state;
   return found[1] ? `${found[0]}/${found[1]}` : found[0];
+}
+
+function style(palette) {
+  return [
+    {
+      selector: "node",
+      style: {
+        "background-color": palette.nodeFill,
+        "border-width": 2,
+        "border-color": palette.nodeBorder,
+        label: "data(label)",
+        color: palette.nodeLabel,
+        "font-size": 14,
+        "text-valign": "center",
+        "text-halign": "center",
+        width: 64,
+        height: 64,
+      },
+    },
+    // начальное состояние — двойная обводка
+    {
+      selector: "node[start]",
+      style: {
+        "border-width": 5,
+        "border-color": palette.currentBorder,
+      },
+    },
+    {
+      selector: "node.path-state",
+      style: {
+        "background-color": palette.activeFill,
+      },
+    },
+    {
+      selector: "node.path-current",
+      style: {
+        "background-color": palette.firingFill,
+        "border-color": palette.activeStrong,
+      },
+    },
+    {
+      selector: "edge",
+      style: {
+        "curve-style": "bezier",
+        "line-color": palette.edge,
+        "target-arrow-color": palette.edge,
+        "target-arrow-shape": "triangle",
+        width: 1.5,
+        label: "data(label)",
+        color: palette.edgeLabel,
+        "font-size": 11,
+        "text-background-color": palette.edgeLabelBg,
+        "text-background-opacity": 0.75,
+        "text-background-padding": 2,
+      },
+    },
+    {
+      selector: "edge.path-edge",
+      style: {
+        "line-color": palette.activeBorder,
+        "target-arrow-color": palette.activeBorder,
+        width: 3,
+        color: palette.activeStrong,
+      },
+    },
+  ];
+}
+
+function restyleTheme() {
+  if (!cy) return;
+  cy.style(style(GRAPH_PALETTES[effectiveTheme()]));
 }
 
 function render() {
@@ -44,74 +117,10 @@ function render() {
     },
   }));
 
-  const style = [
-    {
-      selector: "node",
-      style: {
-        "background-color": "#ffffff",
-        "border-width": 2,
-        "border-color": "#000000",
-        label: "data(label)",
-        color: "#000000",
-        "font-size": 14,
-        "text-valign": "center",
-        "text-halign": "center",
-        width: 64,
-        height: 64,
-      },
-    },
-    // начальное состояние — двойная обводка
-    {
-      selector: "node[start]",
-      style: {
-        "border-width": 5,
-        "border-color": "#0d47a1",
-      },
-    },
-    {
-      selector: "node.path-state",
-      style: {
-        "background-color": "#c8e6c9",
-      },
-    },
-    {
-      selector: "node.path-current",
-      style: {
-        "background-color": "#66bb6a",
-        "border-color": "#1b5e20",
-      },
-    },
-    {
-      selector: "edge",
-      style: {
-        "curve-style": "bezier",
-        "line-color": "#444444",
-        "target-arrow-color": "#444444",
-        "target-arrow-shape": "triangle",
-        width: 1.5,
-        label: "data(label)",
-        color: "#222222",
-        "font-size": 11,
-        "text-background-color": "#ffffff",
-        "text-background-opacity": 0.75,
-        "text-background-padding": 2,
-      },
-    },
-    {
-      selector: "edge.path-edge",
-      style: {
-        "line-color": "#2e7d32",
-        "target-arrow-color": "#2e7d32",
-        width: 3,
-        color: "#1b5e20",
-      },
-    },
-  ];
-
   cy = cytoscape({
     container: el.value,
     elements: [...nodes, ...edges],
-    style,
+    style: style(GRAPH_PALETTES[effectiveTheme()]),
   });
   window.Registry[props.registryKey] = cy;
   cy.layout({
@@ -149,6 +158,7 @@ function applyPath() {
   }
 }
 
+watch(effectiveTheme, restyleTheme);
 watch(() => props.graph, render, { deep: true });
 watch(() => props.path, applyPath);
 

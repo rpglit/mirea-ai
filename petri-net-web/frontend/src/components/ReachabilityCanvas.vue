@@ -1,6 +1,8 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import cytoscape from "cytoscape";
+import { effectiveTheme } from "../theme";
+import { GRAPH_PALETTES } from "../theme/palettes";
 
 const props = defineProps({
   structure: { type: Object, default: null },
@@ -49,6 +51,73 @@ function runLayout() {
   }
 }
 
+function style(palette) {
+  return [
+    {
+      selector: "node",
+      style: {
+        shape: "round-rectangle",
+        width: "14px",
+        height: "14px",
+        "background-color": palette.graphNodeFill,
+        "border-width": "0px",
+        label: "data(label)",
+        "font-size": "7px",
+        color: palette.graphNodeLabel,
+        "text-wrap": "none",
+        "text-valign": "bottom",
+        "text-halign": "center",
+        "text-margin-y": "-3px",
+      },
+    },
+    {
+      selector: "node[?deadlock]",
+      style: {
+        "background-color": palette.deadlock,
+        color: palette.deadlockLabel,
+      },
+    },
+    // BUG-3: текущий узел подсвечен
+    {
+      selector: "node.current",
+      style: {
+        "background-color": palette.current,
+        "border-width": "2px",
+        "border-color": palette.currentBorder,
+        width: "18px",
+        height: "18px",
+      },
+    },
+    {
+      selector: "edge",
+      style: {
+        width: "0.5px",
+        "line-color": palette.edge,
+        "curve-style": "straight",
+        "target-arrow-shape": "triangle",
+        label: "data(label)",
+        "font-size": "6px",
+        color: palette.edgeLabel,
+        "text-wrap": "none",
+      },
+    },
+    {
+      selector: "edge.current-edge",
+      style: {
+        width: "1.5px",
+        "line-color": palette.current,
+        "target-arrow-color": palette.current,
+        color: palette.currentBorder,
+      },
+    },
+  ];
+}
+
+function restyleTheme() {
+  if (!cy) return;
+  cy.style(style(GRAPH_PALETTES[effectiveTheme()]));
+}
+
 function render() {
   if (cy) {
     cy.destroy();
@@ -87,70 +156,10 @@ function render() {
     });
   }
 
-  const style = [
-    {
-      selector: "node",
-      style: {
-        shape: "round-rectangle",
-        width: "14px",
-        height: "14px",
-        "background-color": "#eef",
-        "border-width": "0px",
-        label: "data(label)",
-        "font-size": "7px",
-        color: "#333",
-        "text-wrap": "none",
-        "text-valign": "bottom",
-        "text-halign": "center",
-        "text-margin-y": "-3px",
-      },
-    },
-    {
-      selector: "node[?deadlock]",
-      style: {
-        "background-color": "#d33",
-        color: "#fff",
-      },
-    },
-    // BUG-3: текущий узел подсвечен
-    {
-      selector: "node.current",
-      style: {
-        "background-color": "#1a73e8",
-        "border-width": "2px",
-        "border-color": "#0d47a1",
-        width: "18px",
-        height: "18px",
-      },
-    },
-    {
-      selector: "edge",
-      style: {
-        width: "0.5px",
-        "line-color": "#888",
-        "curve-style": "straight",
-        "target-arrow-shape": "triangle",
-        label: "data(label)",
-        "font-size": "6px",
-        color: "#888",
-        "text-wrap": "none",
-      },
-    },
-    {
-      selector: "edge.current-edge",
-      style: {
-        width: "1.5px",
-        "line-color": "#1a73e8",
-        "target-arrow-color": "#1a73e8",
-        color: "#0d47a1",
-      },
-    },
-  ];
-
   cy = cytoscape({
     container: el.value,
     elements,
-    style,
+    style: style(GRAPH_PALETTES[effectiveTheme()]),
     minZoom: 0.05,
     maxZoom: 8,
   });
@@ -184,6 +193,7 @@ function applyCurrent() {
   });
 }
 
+watch(effectiveTheme, restyleTheme);
 watch(() => props.structure, render);
 watch(() => props.current, applyCurrent);
 watch(() => props.deadlocks, render);

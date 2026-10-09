@@ -4,6 +4,16 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Сети Петри</title>
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("pn-theme") || "system";
+          var dark = t === "dark" || t === "tokyo-night" || t === "catppuccin-mocha" || t === "synthwave84";
+          if (t === "system") dark = matchMedia("(prefers-color-scheme: dark)").matches;
+          document.documentElement.dataset.theme = dark ? (t === "system" ? "dark" : t) : (t === "system" ? "light" : "light");
+        } catch (e) { document.documentElement.dataset.theme = "light"; }
+      })();
+    </script>
   </head>
   <body>
     <div id="app"></div>

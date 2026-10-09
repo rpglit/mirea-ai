@@ -2,6 +2,7 @@
 // responses; the view is switched without a router (net / home).
 
 import { reactive } from "vue";
+import { savedTheme } from "./theme";
 
 export const SMOKE_TEXT = `S = (P, T, I, O, µ),
 P = {p1, p2, p3, p4, p5, p6}, T = {t1, t2, t3, t4, t5},
@@ -14,6 +15,7 @@ I(t5) = {p5, p5},   O(t5) = {p1, p3},
 
 export const store = reactive({
   view: "net",
+  theme: savedTheme(),
   // net view
   sessionId: null,
   name: "",

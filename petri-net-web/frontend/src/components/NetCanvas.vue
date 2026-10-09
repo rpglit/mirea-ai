@@ -1,6 +1,8 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import cytoscape from "cytoscape";
+import { effectiveTheme } from "../theme";
+import { GRAPH_PALETTES } from "../theme/palettes";
 
 const props = defineProps({
   net: { type: Object, default: null },
@@ -83,16 +85,16 @@ function buildElements(net) {
   return elements;
 }
 
-function style() {
+function style(palette) {
   return [
     {
       selector: "node",
       style: {
-        "background-color": "#ffffff",
+        "background-color": palette.nodeFill,
         "border-width": 2,
-        "border-color": "#000000",
+        "border-color": palette.nodeBorder,
         label: "data(label)",
-        color: "#000000",
+        color: palette.nodeLabel,
         "font-size": 12,
         "text-valign": "bottom",
         "text-halign": "center",
@@ -105,7 +107,8 @@ function style() {
       selector: 'node[kind = "transition"]',
       style: {
         shape: "rectangle",
-        "background-color": "#e8eef7",
+        "background-color": palette.transitionFill,
+        color: palette.transitionLabel,
         width: 48,
         height: 48,
       },
@@ -114,17 +117,17 @@ function style() {
     {
       selector: 'node[kind = "transition"].active',
       style: {
-        "background-color": "#c8e6c9",
-        "border-color": "#2e7d32",
+        "background-color": palette.activeFill,
+        "border-color": palette.activeBorder,
         "border-width": 3,
-        color: "#1b5e20",
+        color: palette.activeStrong,
       },
     },
     {
       selector: 'node[kind = "transition"].firing',
       style: {
-        "background-color": "#66bb6a",
-        "border-color": "#1b5e20",
+        "background-color": palette.firingFill,
+        "border-color": palette.activeStrong,
         width: 58,
         height: 58,
       },
@@ -133,14 +136,14 @@ function style() {
       selector: "edge",
       style: {
         "curve-style": "bezier",
-        "line-color": "#444444",
-        "target-arrow-color": "#444444",
+        "line-color": palette.edge,
+        "target-arrow-color": palette.edge,
         "target-arrow-shape": "triangle",
         width: 1.5,
         label: "data(label)",
-        color: "#222222",
+        color: palette.edgeLabel,
         "font-size": 10,
-        "text-background-color": "#ffffff",
+        "text-background-color": palette.edgeLabelBg,
         "text-background-opacity": 0.75,
         "text-background-padding": 2,
       },
@@ -150,8 +153,8 @@ function style() {
       style: {
         "line-style": "dashed",
         "target-arrow-shape": "tee",
-        "line-color": "#8e24aa",
-        "target-arrow-color": "#8e24aa",
+        "line-color": palette.inhibitor,
+        "target-arrow-color": palette.inhibitor,
       },
     },
   ];
@@ -169,7 +172,7 @@ function render() {
   cy = cytoscape({
     container: el.value,
     elements: buildElements(props.net),
-    style: style(),
+    style: style(GRAPH_PALETTES[effectiveTheme()]),
   });
   window.Registry.net = cy;
   cy.on("tap", 'node[kind = "transition"]', (evt) => {
@@ -229,6 +232,12 @@ function applyFiring() {
   }
 }
 
+function restyleTheme() {
+  if (!cy) return;
+  cy.style(style(GRAPH_PALETTES[effectiveTheme()]));
+}
+
+watch(effectiveTheme, restyleTheme);
 watch(() => props.net, render, { deep: true });
 watch(() => props.marking, () => {
   applyMarking();

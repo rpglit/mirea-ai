@@ -2,6 +2,7 @@
 import { store } from "./store";
 import HomeView from "./components/HomeView.vue";
 import NetView from "./components/NetView.vue";
+import ThemeSwitcher from "./components/ThemeSwitcher.vue";
 
 function switchView(view) {
   store.view = view;
@@ -42,6 +43,7 @@ function switchView(view) {
         Задание из практикума
       </button>
     </nav>
+    <ThemeSwitcher />
     <span v-if="store.name || store.sessionId" id="session-badge">
       {{ store.name || store.sessionId }}
     </span>
