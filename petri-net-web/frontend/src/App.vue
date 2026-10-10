@@ -62,7 +62,7 @@ onBeforeUnmount(() => {
 <template>
   <header>
     <h1>Сети Петри</h1>
-    <nav class="view-tabs tabs">
+    <nav class="view-tabs tabs" aria-label="Экраны">
       <button
         type="button"
         class="tab"
@@ -88,17 +88,19 @@ onBeforeUnmount(() => {
     </span>
   </header>
 
-  <p id="status-line" class="status" role="status">{{ store.status }}</p>
+  <main>
+    <p id="status-line" class="status" role="status">{{ store.status }}</p>
 
-  <NetView v-show="store.view === 'net'" />
-  <HomeView v-show="store.view === 'home'" />
+    <NetView v-show="store.view === 'net'" />
+    <HomeView v-show="store.view === 'home'" />
 
-  <div
-    id="toast"
-    class="toast"
-    :class="{ hidden: !store.toast.visible, error: store.toast.error }"
-    role="alert"
-  >
-    {{ store.toast.text }}
-  </div>
+    <div
+      id="toast"
+      class="toast"
+      :class="{ hidden: !store.toast.visible, error: store.toast.error }"
+      role="alert"
+    >
+      {{ store.toast.text }}
+    </div>
+  </main>
 </template>

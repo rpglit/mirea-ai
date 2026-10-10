@@ -1,0 +1,24 @@
+{
+ "generated": "2026-10-09T23:57:28.363331+00:00",
+ "axe_core_version": "axe-core",
+ "criterion": "0 violations уровня critical и major (axe-core 4.13: major = serious)",
+ "screens": {
+  "main-light": {
+   "counts": {},
+   "notable": []
+  },
+  "main-dark": {
+   "counts": {},
+   "notable": []
+  },
+  "report-lss14-light": {
+   "counts": {},
+   "notable": []
+  },
+  "report-lss14-dark": {
+   "counts": {},
+   "notable": []
+  }
+ },
+ "pass": true
+}

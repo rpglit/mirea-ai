@@ -105,10 +105,10 @@ function close() {
 <template>
   <section class="solver">
     <div class="report-actions" style="justify-content: space-between">
-      <h3 style="margin: 0">
+      <h2 style="margin: 0">
         {{ task.task_id }} — {{ task.title }}
         <span class="muted">({{ task.source }}, {{ task.type }})</span>
-      </h3>
+      </h2>
       <button type="button" @click="close">Закрыть</button>
     </div>
 

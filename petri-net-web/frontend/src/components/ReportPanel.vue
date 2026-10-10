@@ -280,7 +280,7 @@ async function exportAutomatonPng() {
   <section class="report">
     <h3>Отчёт по {{ report.task_id }}</h3>
 
-    <h4>Дано</h4>
+    <h3 class="report-block">Дано</h3>
     <dl class="given-dl">
       <template v-for="row in givenRows" :key="row.key">
         <dt>{{ row.key }}</dt>
@@ -301,16 +301,16 @@ async function exportAutomatonPng() {
       </template>
     </dl>
 
-    <h4>Найти</h4>
+    <h3 class="report-block">Найти</h3>
     <ol>
       <li v-for="(item, i) in find" :key="i">{{ item }}</li>
     </ol>
 
-    <h4>Решение</h4>
+    <h3 class="report-block">Решение</h3>
     <div v-for="step in solution" :key="step.step" class="step-block">
-      <h5 style="margin: 10px 0 2px">
+      <h4>
         Шаг {{ step.step }}. {{ step.title }}
-      </h5>
+      </h4>
       <pre class="step-text"><template v-for="(seg, i) in stepSegments(step)" :key="i"><Formula
           v-if="seg !== null && typeof seg === 'object'"
           :tex="seg.tex"
@@ -369,7 +369,7 @@ async function exportAutomatonPng() {
     </div>
     <p v-if="!solution.length" class="muted">Решение не требуется (задача-модель).</p>
 
-    <h4>Ответ</h4>
+    <h3 class="report-block">Ответ</h3>
     <div class="answer-block">
       <div
         v-for="row in answerRows"
@@ -419,7 +419,7 @@ async function exportAutomatonPng() {
       </div>
     </div>
 
-    <h4 v-if="notes.length">Пояснения</h4>
+    <h3 v-if="notes.length" class="report-block">Пояснения</h3>
     <ul v-if="notes.length">
       <li v-for="(note, i) in notes" :key="i">{{ note }}</li>
     </ul>

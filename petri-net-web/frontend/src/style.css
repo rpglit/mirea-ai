@@ -32,6 +32,11 @@ h1 {
   font-size: 1.5rem;
 }
 
+h2 {
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+}
+
 h3 {
   margin: 0 0 8px;
   font-size: 1.05rem;
@@ -40,6 +45,18 @@ h3 {
 h4 {
   margin: 14px 0 6px;
   font-size: 1rem;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 #session-badge {
@@ -526,6 +543,18 @@ button.history-line {
 }
 
 /* Отчёт решателя: Дано / Найти / Решение / Ответ */
+/* h3.report-block / .step-block h4 — прежний вид h4/h5 после выравнивания
+   заголовков (E2E-12 pixel-diff). */
+.report h3.report-block {
+  margin: 14px 0 6px;
+  font-size: 1rem;
+}
+
+.step-block h4 {
+  margin: 10px 0 2px;
+  font-size: 0.83em;
+}
+
 .report {
   margin-top: 12px;
 }

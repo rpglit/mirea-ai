@@ -157,7 +157,7 @@ function runCurrent() {
       placeholder="Например: «Эталонная сеть»"
     />
 
-    <nav class="tabs" id="input-tabs">
+    <nav class="tabs" id="input-tabs" aria-label="Формат ввода">
       <button
         type="button"
         id="tab-text"
@@ -224,7 +224,12 @@ function runCurrent() {
       <label>Дуги</label>
       <div id="arcs-list">
         <div v-for="(arc, i) in arcs" :key="i" class="arc-row">
-          <select v-model="arc.direction" class="arc-direction" title="Вид дуги">
+            <select
+              v-model="arc.direction"
+              class="arc-direction"
+              title="Вид дуги"
+              aria-label="Вид дуги"
+            >
             <option value="input">вход (позиция → переход)</option>
             <option value="output">выход (переход → позиция)</option>
             <option value="inhibitor">ингибитор (⊣, позиция → переход)</option>

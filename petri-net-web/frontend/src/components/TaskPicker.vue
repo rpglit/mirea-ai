@@ -32,6 +32,7 @@ onMounted(load);
 
 <template>
   <div>
+    <h2 class="visually-hidden">Каталог заданий</h2>
     <div class="catalog-filters">
       <button type="button" class="tab" :class="{ active: group === null }" @click="setGroup(null)">
         Все (71)

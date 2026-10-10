@@ -10,6 +10,7 @@ liveness probe, and the static frontend. Example:
 from __future__ import annotations
 
 import logging
+import sys
 import time
 from pathlib import Path
 
@@ -35,6 +36,18 @@ from petrinet.errors import (
 from petrinet.logging_setup import setup_logging
 
 
+def _tighten_gil_switch_interval() -> None:
+    """Re-acquire the GIL every 1 ms (CPython default: 5 ms) at app startup.
+
+    The pure-Python sympy solver worker holds the GIL across long bytecode
+    spans, so with the default interval a /healthz thread can starve for up to
+    ~5 ms at every handoff point in the request pipeline (PERF-1, D-061);
+    1 ms cuts that worst-case wait ~5x and keeps p95 /healthz < 150 ms under
+    a parallel solve.
+    """
+    sys.setswitchinterval(0.001)
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     """Build the FastAPI application with routes and error handlers registered.
 
@@ -47,6 +60,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     """
     settings = settings or get_settings()
     setup_logging(settings.log_level)
+    _tighten_gil_switch_interval()
     app = FastAPI(title="Petri Net Web", version="0.1.0")
 
     @app.middleware("http")

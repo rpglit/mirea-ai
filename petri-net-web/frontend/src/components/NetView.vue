@@ -336,7 +336,11 @@ watch(
       </div>
 
       <div id="build-row">
-        <select v-model="graphMode" title="Режим построения">
+        <select
+          v-model="graphMode"
+          title="Режим построения"
+          aria-label="Режим построения графа"
+        >
           <option value="auto">Авто</option>
           <option value="bounded">Ограниченный</option>
           <option value="coverability">Покрываемость (Кэрп–Миллер)</option>
@@ -352,7 +356,7 @@ watch(
       </div>
 
       <div id="step-panel">
-        <h3>Пошаговое проигрывание</h3>
+        <h2>Пошаговое проигрывание</h2>
         <StepPanel
           :active="store.active"
           :history="store.history"
@@ -365,7 +369,7 @@ watch(
       </div>
 
       <div id="props-panel">
-        <h3>Свойства</h3>
+        <h2>Свойства</h2>
         <PropertiesPanel :report="store.report" :kind="store.structureKind" />
       </div>
 

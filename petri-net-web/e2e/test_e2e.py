@@ -1,10 +1,12 @@
-# E2E scenarios E2E-1..E2E-5 (docs/TEST_PLAN.md section 5).
+# E2E scenarios E2E-1..E2E-13 (docs/TEST_PLAN.md section 5).
 
 import json
 from pathlib import Path
 
+import pytest
 from playwright.sync_api import Page
 
+import vr
 from conftest import (
     BASE_URL,
     SMOKE_JSON,
@@ -268,5 +270,110 @@ def test_e2e9_theme_switching(page: Page) -> None:
     assert page.evaluate("() => document.documentElement.dataset.theme") == "tokyo-night"
     page.select_option(".theme-select", "light")
     assert page.evaluate("() => document.documentElement.dataset.theme") == "light"
+
+
+# --- E2E-11: ключевые TASK в обеих темах (итерация 3, фаза 2.6) --------------------
+
+
+@pytest.mark.parametrize("task_id", ["TASK-PN-05", "TASK-LSS-14", "TASK-FA-03"])
+@pytest.mark.parametrize("theme", ["light", "dark"])
+def test_e2e11_key_tasks_in_themes(page: Page, task_id: str, theme: str) -> None:
+    """E2E-11: «Задание из практикума» → карточка → «Решить» → отчёт, light/dark."""
+    vr.set_theme(page, theme)
+    page.click("button:has-text('Задание из практикума')")
+    page.wait_for_selector(".task-card")
+    page.locator(".task-card", has_text=task_id).first.locator(
+        "button", has_text="Решить"
+    ).click()
+    page.wait_for_selector("#task-data")
+    page.locator(".solver button.primary", has_text="Решить").click()
+    page.wait_for_selector(".report")
+    report_text = page.inner_text(".report")
+    assert report_text
+    if task_id == "TASK-PN-05":
+        assert "(5,3,4,6,3,3)" in report_text
+    if task_id == "TASK-LSS-14":
+        assert (
+            page.evaluate(
+                "() => document.querySelectorAll('.report .formula .katex').length"
+            )
+            >= 1
+        )
+    if task_id == "TASK-FA-03":
+        page.wait_for_function(
+            "() => (window.Registry.automaton ? window.Registry.automaton.$('node').length : 0) === 4",
+            timeout=15000,
+        )
+    if theme == "dark":
+        assert page.evaluate("() => document.documentElement.dataset.theme") == "dark"
+        assert (
+            page.evaluate("() => document.querySelectorAll('.formula__fallback').length")
+            == 0
+        )
+
+
+# --- E2E-12: visual regression (итерация 3, фаза 2.6) -----------------------------
+
+VR_CASES = [
+    ("main-light", "light", vr.render_main),
+    ("main-dark", "dark", vr.render_main),
+    ("report-lss14-light", "light", vr.render_report_lss14),
+    ("report-lss14-dark", "dark", vr.render_report_lss14),
+]
+
+
+@pytest.mark.parametrize("case_name,theme,render", VR_CASES, ids=[c[0] for c in VR_CASES])
+def test_e2e12_visual_regression(page: Page, case_name: str, theme: str, render) -> None:
+    """E2E-12: пиксельный диф против baseline (Pillow, < 1% пикселей, Δ > 30).
+
+    Маски (vr.MASKED_SELECTORS): #canvas-net (COSE-дрейф) и #session-badge
+    (uuid, /parse без name) — к baseline и current применяются одинаково.
+    """
+    vr.set_theme(page, theme)
+    render(page)
+    img, masks = vr.capture(page)
+    vr.CURRENT_DIR.mkdir(parents=True, exist_ok=True)
+    current = vr.CURRENT_DIR / f"{case_name}.png"
+    img.save(current)
+    result = vr.compare(vr.BASELINES_DIR / f"{case_name}.png", current, masks)
+    vr.assert_within_budget(result, case_name)
+
+
+# --- E2E-13: focus-цикл (NFR-111, итерация 3, фаза 2.6) ---------------------------
+
+
+def test_e2e13_focus_cycle(page: Page) -> None:
+    """E2E-13: focus-цикл Tab×10 на главном экране — 0 pageerror, :focus-visible.
+
+    Свежий экран «Сеть Петри» имеет 9 таб-стопов (2 view-tab, select темы,
+    имя сессии, 3 input-tab, textarea, «Проанализировать»); 10-й Tab —
+    обход к <body> (стандартное поведение Chromium, с <body> следующий Tab
+    возвращается к первому элементу). Единственная остановка без
+    :focus-visible — такая обходная; остальные обязаны быть видимым фокусом.
+    """
+    page_errors: list[str] = []
+    page.on("pageerror", lambda exc: page_errors.append(str(exc)))
+    page.goto(BASE_URL)
+    page.wait_for_selector(".theme-select")
+    focus_visible_stops = 0
+    for _ in range(10):
+        page.keyboard.press("Tab")
+        info = page.evaluate(
+            "() => {"
+            " const el = document.activeElement;"
+            " return {"
+            "  tag: el ? el.tagName : null,"
+            "  fv: !!(el && el.matches(':focus-visible')),"
+            " };"
+            "}"
+        )
+        if info["fv"]:
+            focus_visible_stops += 1
+        else:
+            assert info["tag"] in ("BODY", "HTML"), (
+                f"фокус без :focus-visible на <{info['tag']}>"
+            )
+    assert focus_visible_stops >= 9
+    assert page_errors == []
 
 

@@ -55,11 +55,10 @@ async function copyTex() {
   <span
     class="formula"
     :class="{ 'formula--display': display }"
-    role="math"
+    role="figure"
     :aria-label="label || tex"
     :title="tex"
     :data-tex="tex"
-    tabindex="0"
   >
     <span v-if="html.ok" class="formula__katex" aria-hidden="true" v-html="html.katex"></span>
     <code v-else class="formula__fallback">{{ label || tex }}</code>
