@@ -2,7 +2,7 @@
 
 |              |                                                                    |
 | ------------ | ------------------------------------------------------------------ |
-| Статус       | v3.1 (итерация 3, фазы 2.6–3, **после фиксации находок**) — **PASS** |
+| Статус       | v3.2 (итерация 3, фазы 2.6–4, **после фиксации находок и приёмки 142/142**) — **PASS** |
 | Дата         | 2026-10-10                                                         |
 | План         | `docs/TEST_PLAN.md` v3.0                                           |
 | Гейты        | `app pytest` / `ruff check src tests` / `mypy` / `e2e` (13 сценариев) / audit: axe, perf, VR — в контейнерах |
@@ -11,7 +11,7 @@
 
 | Гейт | Результат | Детали |
 | ---- | --------- | ------ |
-| Юнит + property | **286 passed** (0 failed) | 18 файлов; 32.6 с |
+| Юнит + property | **287 passed** (0 failed) | 18 файлов; ~32 с |
 | ruff | **All checks passed** | `src tests` |
 | mypy (strict) | **no issues found in 21 source files** | |
 | E2E | **21 passed / 13 сценариев** (0 failed) | 32.2 с; console чистый во всех сценариях (NFR-107) |
@@ -204,18 +204,25 @@ GIL, реальный CPU-bound solve — нет.
 
 ## 11. Вывод
 
-Все основные гейты зелёные: **286 pytest** (вкл. property и новый
-инвариант дедупликации solve_future), **ruff/mypy strict** чистые,
-**21/21 e2e-тест (13 сценариев)** с чистым console, **visual regression —
-0 диф-пикселей** на 4 ключевых экранах, производительность в 2.9 раза ниже
-бюджета ADR-0012 (1.69 с), P0/P1 аудита подтверждённо закрыты.
-Однако по результатам **axe-аудита нарушен NFR-111** (0 critical/major):
-найдено 2 serious-правила — `nested-interactive` (WCAG 2.1 AA, Formula.vue)
-и `label-title-only`, а **NFR-112 AC(1)** (p95 healthz < 50 мс) не выдерживается
-под холодным solve TASK-LSS-10 (97.5 мс, GIL-остаток). Обе позиции —
-требования итерации 3, закрытие — за продуктовой командой (код QA не
-изменял). **Вердикт: REJECT с 2 находками (A11Y-1 — P1, PERF-1 — P2;
-+ замечания A11Y-2, PROD-3, P2-moderate).** Повторная приёмка после фикса
-A11Y-1/PERF-1: пересборка не требуется (фикс фронтенда/воркера → build app),
-гейты: `app pytest` / `ruff` / `mypy` / `e2e` / `audit/axe_check.py` /
-`audit/perf_check.py`.
+Приёмка Фазы 4: **71 задача × 2 темы (light/dark) = 142/142 OK** через
+веб-интерфейс (`e2e/audit/acceptance_all.py`): 0 formula-fallback, 0
+pageerror, LSS без .katex — ни одной; solve-тайминги браузер
+min/p95/max = 37/209/1322 мс; таблица —
+`docs/acceptance/iteration3/acceptance_table.md`, 142 отчёта — `reports/`.
+Дефект, найденный приёмкой (roots_tex: int-кратности в `:tex` → KaTeX
+fallback, LSS-02/03/04/15), закрыт до финального прогона (D-062).
+
+Все основные гейты зелёные: **287 pytest** (вкл. property, инвариант
+дедупликации solve_future, строковый roots_tex), **ruff/mypy strict** чистые,
+**21/21 e2e-тест (13 сценариев)** с чистым console, **axe 0 critical / 0
+serious / 0 moderate** (в первичном прогоне фазы 3 были найдены
+`nested-interactive` (WCAG 2.1 AA, Formula.vue) и `label-title-only` —
+закрыты продуктовой командой: Formula `role="figure"` без tabindex,
+aria-label на select; moderate-правила heading-order/landmarks закрыты
+вместе), **NFR-112** выдержан после `sys.setswitchinterval(0.001)` (D-061):
+p95 healthz под solve 13.7–20.5 мс < 50 мс, **visual regression — 0
+диф-пикселей** на 4 ключевых экранах, производительность 1.69 с (бюджет
+5 с, ADR-0012), P0/P1 аудита подтверждённо закрыты. Остаточные замечания
+(не блокирующие): PROD-3 (uuid-бейдж без имени — принято, VR-маска),
+clipboard на http — execCommand-fallback (E2E-10 проверяет обе ветки).
+**Вердикт: PASS — итерация 3 принята (D-062).**
