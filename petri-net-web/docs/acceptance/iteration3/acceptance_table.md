@@ -1,0 +1,77 @@
+# Приёмка итерации 3 — все 71 задача × 2 темы (light/dark)
+
+Прогон: http://app:8000, Playwright headless, fresh-страница на пару.
+
+| task_id | group | light | dark | отчёт |
+|---|---|---|---|---|
+| TASK-PN-01 | PN | OK (71 ms) | OK (65 ms) | [light](reports/TASK-PN-01-light.json) · [dark](reports/TASK-PN-01-dark.json) |
+| TASK-PN-02 | PN | OK (57 ms) | OK (53 ms) | [light](reports/TASK-PN-02-light.json) · [dark](reports/TASK-PN-02-dark.json) |
+| TASK-PN-03 | PN | OK (55 ms) | OK (53 ms) | [light](reports/TASK-PN-03-light.json) · [dark](reports/TASK-PN-03-dark.json) |
+| TASK-PN-04 | PN | OK (59 ms) | OK (53 ms) | [light](reports/TASK-PN-04-light.json) · [dark](reports/TASK-PN-04-dark.json) |
+| TASK-PN-05 | PN | OK (58 ms) | OK (57 ms) | [light](reports/TASK-PN-05-light.json) · [dark](reports/TASK-PN-05-dark.json) |
+| TASK-PN-06 | PN | OK (50 ms) | OK (52 ms) | [light](reports/TASK-PN-06-light.json) · [dark](reports/TASK-PN-06-dark.json) |
+| TASK-PN-07 | PN | OK (53 ms) | OK (54 ms) | [light](reports/TASK-PN-07-light.json) · [dark](reports/TASK-PN-07-dark.json) |
+| TASK-PN-08 | PN | OK (216 ms) | OK (52 ms) | [light](reports/TASK-PN-08-light.json) · [dark](reports/TASK-PN-08-dark.json) |
+| TASK-PN-09 | PN | OK (55 ms) | OK (54 ms) | [light](reports/TASK-PN-09-light.json) · [dark](reports/TASK-PN-09-dark.json) |
+| TASK-PN-11 | PN | OK (69 ms) | OK (68 ms) | [light](reports/TASK-PN-11-light.json) · [dark](reports/TASK-PN-11-dark.json) |
+| TASK-PN-12 | PN | OK (70 ms) | OK (68 ms) | [light](reports/TASK-PN-12-light.json) · [dark](reports/TASK-PN-12-dark.json) |
+| TASK-PN-13 | PN | OK (91 ms) | OK (73 ms) | [light](reports/TASK-PN-13-light.json) · [dark](reports/TASK-PN-13-dark.json) |
+| TASK-PN-14 | PN | OK (68 ms) | OK (68 ms) | [light](reports/TASK-PN-14-light.json) · [dark](reports/TASK-PN-14-dark.json) |
+| TASK-PN-16 | PN | OK (77 ms) | OK (90 ms) | [light](reports/TASK-PN-16-light.json) · [dark](reports/TASK-PN-16-dark.json) |
+| TASK-PN-17 | PN | OK (74 ms) | OK (76 ms) | [light](reports/TASK-PN-17-light.json) · [dark](reports/TASK-PN-17-dark.json) |
+| TASK-PN-18 | PN | OK (63 ms) | OK (61 ms) | [light](reports/TASK-PN-18-light.json) · [dark](reports/TASK-PN-18-dark.json) |
+| TASK-PN-19 | PN | OK (90 ms) | OK (72 ms) | [light](reports/TASK-PN-19-light.json) · [dark](reports/TASK-PN-19-dark.json) |
+| TASK-PN-20 | PN | OK (81 ms) | OK (73 ms) | [light](reports/TASK-PN-20-light.json) · [dark](reports/TASK-PN-20-dark.json) |
+| TASK-PN-21 | PN | OK (79 ms) | OK (51 ms) | [light](reports/TASK-PN-21-light.json) · [dark](reports/TASK-PN-21-dark.json) |
+| TASK-PN-22 | PN | OK (53 ms) | OK (54 ms) | [light](reports/TASK-PN-22-light.json) · [dark](reports/TASK-PN-22-dark.json) |
+| TASK-PN-23 | PN | OK (50 ms) | OK (50 ms) | [light](reports/TASK-PN-23-light.json) · [dark](reports/TASK-PN-23-dark.json) |
+| TASK-PN-24 | PN | OK (58 ms) | OK (54 ms) | [light](reports/TASK-PN-24-light.json) · [dark](reports/TASK-PN-24-dark.json) |
+| TASK-PN-25 | PN | OK (55 ms) | OK (53 ms) | [light](reports/TASK-PN-25-light.json) · [dark](reports/TASK-PN-25-dark.json) |
+| TASK-PN-26 | PN | OK (58 ms) | OK (40 ms) | [light](reports/TASK-PN-26-light.json) · [dark](reports/TASK-PN-26-dark.json) |
+| TASK-PN-27 | PN | OK (111 ms) | OK (57 ms) | [light](reports/TASK-PN-27-light.json) · [dark](reports/TASK-PN-27-dark.json) |
+| TASK-PN-28 | PN | OK (53 ms) | OK (76 ms) | [light](reports/TASK-PN-28-light.json) · [dark](reports/TASK-PN-28-dark.json) |
+| TASK-PN-29 | PN | OK (64 ms) | OK (56 ms) | [light](reports/TASK-PN-29-light.json) · [dark](reports/TASK-PN-29-dark.json) |
+| TASK-PN-31 | PN | OK (63 ms) | OK (51 ms) | [light](reports/TASK-PN-31-light.json) · [dark](reports/TASK-PN-31-dark.json) |
+| TASK-PN-34 | PN | OK (66 ms) | OK (66 ms) | [light](reports/TASK-PN-34-light.json) · [dark](reports/TASK-PN-34-dark.json) |
+| TASK-PN-35 | PN | OK (65 ms) | OK (55 ms) | [light](reports/TASK-PN-35-light.json) · [dark](reports/TASK-PN-35-dark.json) |
+| TASK-PN-38 | PN | OK (50 ms) | OK (49 ms) | [light](reports/TASK-PN-38-light.json) · [dark](reports/TASK-PN-38-dark.json) |
+| TASK-PN-39 | PN | OK (54 ms) | OK (62 ms) | [light](reports/TASK-PN-39-light.json) · [dark](reports/TASK-PN-39-dark.json) |
+| TASK-PN-40 | PN | OK (49 ms) | OK (48 ms) | [light](reports/TASK-PN-40-light.json) · [dark](reports/TASK-PN-40-dark.json) |
+| TASK-PN-10 | PN | OK (86 ms) | OK (84 ms) | [light](reports/TASK-PN-10-light.json) · [dark](reports/TASK-PN-10-dark.json) |
+| TASK-PN-30 | PN | OK (40 ms) | OK (40 ms) | [light](reports/TASK-PN-30-light.json) · [dark](reports/TASK-PN-30-dark.json) |
+| TASK-PN-15 | PN | OK (74 ms) | OK (70 ms) | [light](reports/TASK-PN-15-light.json) · [dark](reports/TASK-PN-15-dark.json) |
+| TASK-PN-32 | PN | OK (43 ms) | OK (37 ms) | [light](reports/TASK-PN-32-light.json) · [dark](reports/TASK-PN-32-dark.json) |
+| TASK-PN-33 | PN | OK (46 ms) | OK (45 ms) | [light](reports/TASK-PN-33-light.json) · [dark](reports/TASK-PN-33-dark.json) |
+| TASK-PN-36 | PN | OK (46 ms) | OK (43 ms) | [light](reports/TASK-PN-36-light.json) · [dark](reports/TASK-PN-36-dark.json) |
+| TASK-PN-37 | PN | OK (38 ms) | OK (41 ms) | [light](reports/TASK-PN-37-light.json) · [dark](reports/TASK-PN-37-dark.json) |
+| TASK-LSS-01 | LSS | OK (209 ms) | OK (89 ms) | [light](reports/TASK-LSS-01-light.json) · [dark](reports/TASK-LSS-01-dark.json) |
+| TASK-LSS-02 | LSS | OK (78 ms) | OK (86 ms) | [light](reports/TASK-LSS-02-light.json) · [dark](reports/TASK-LSS-02-dark.json) |
+| TASK-LSS-03 | LSS | OK (77 ms) | OK (72 ms) | [light](reports/TASK-LSS-03-light.json) · [dark](reports/TASK-LSS-03-dark.json) |
+| TASK-LSS-04 | LSS | OK (96 ms) | OK (85 ms) | [light](reports/TASK-LSS-04-light.json) · [dark](reports/TASK-LSS-04-dark.json) |
+| TASK-LSS-05 | LSS | OK (223 ms) | OK (70 ms) | [light](reports/TASK-LSS-05-light.json) · [dark](reports/TASK-LSS-05-dark.json) |
+| TASK-LSS-06 | LSS | OK (72 ms) | OK (62 ms) | [light](reports/TASK-LSS-06-light.json) · [dark](reports/TASK-LSS-06-dark.json) |
+| TASK-LSS-07 | LSS | OK (107 ms) | OK (67 ms) | [light](reports/TASK-LSS-07-light.json) · [dark](reports/TASK-LSS-07-dark.json) |
+| TASK-LSS-08 | LSS | OK (82 ms) | OK (55 ms) | [light](reports/TASK-LSS-08-light.json) · [dark](reports/TASK-LSS-08-dark.json) |
+| TASK-LSS-09 | LSS | OK (78 ms) | OK (70 ms) | [light](reports/TASK-LSS-09-light.json) · [dark](reports/TASK-LSS-09-dark.json) |
+| TASK-LSS-10 | LSS | OK (1322 ms) | OK (214 ms) | [light](reports/TASK-LSS-10-light.json) · [dark](reports/TASK-LSS-10-dark.json) |
+| TASK-LSS-11 | LSS | OK (158 ms) | OK (90 ms) | [light](reports/TASK-LSS-11-light.json) · [dark](reports/TASK-LSS-11-dark.json) |
+| TASK-LSS-12 | LSS | OK (396 ms) | OK (122 ms) | [light](reports/TASK-LSS-12-light.json) · [dark](reports/TASK-LSS-12-dark.json) |
+| TASK-LSS-13 | LSS | OK (97 ms) | OK (92 ms) | [light](reports/TASK-LSS-13-light.json) · [dark](reports/TASK-LSS-13-dark.json) |
+| TASK-LSS-14 | LSS | OK (90 ms) | OK (103 ms) | [light](reports/TASK-LSS-14-light.json) · [dark](reports/TASK-LSS-14-dark.json) |
+| TASK-LSS-15 | LSS | OK (85 ms) | OK (74 ms) | [light](reports/TASK-LSS-15-light.json) · [dark](reports/TASK-LSS-15-dark.json) |
+| TASK-LSS-16 | LSS | OK (80 ms) | OK (71 ms) | [light](reports/TASK-LSS-16-light.json) · [dark](reports/TASK-LSS-16-dark.json) |
+| TASK-LSS-17 | LSS | OK (145 ms) | OK (64 ms) | [light](reports/TASK-LSS-17-light.json) · [dark](reports/TASK-LSS-17-dark.json) |
+| TASK-LSS-18 | LSS | OK (60 ms) | OK (66 ms) | [light](reports/TASK-LSS-18-light.json) · [dark](reports/TASK-LSS-18-dark.json) |
+| TASK-LSS-19 | LSS | OK (121 ms) | OK (66 ms) | [light](reports/TASK-LSS-19-light.json) · [dark](reports/TASK-LSS-19-dark.json) |
+| TASK-LSS-20 | LSS | OK (1316 ms) | OK (88 ms) | [light](reports/TASK-LSS-20-light.json) · [dark](reports/TASK-LSS-20-dark.json) |
+| TASK-LSS-21 | LSS | OK (104 ms) | OK (80 ms) | [light](reports/TASK-LSS-21-light.json) · [dark](reports/TASK-LSS-21-dark.json) |
+| TASK-LSS-22 | LSS | OK (260 ms) | OK (143 ms) | [light](reports/TASK-LSS-22-light.json) · [dark](reports/TASK-LSS-22-dark.json) |
+| TASK-LSS-23 | LSS | OK (119 ms) | OK (79 ms) | [light](reports/TASK-LSS-23-light.json) · [dark](reports/TASK-LSS-23-dark.json) |
+| TASK-FA-01 | FA | OK (81 ms) | OK (83 ms) | [light](reports/TASK-FA-01-light.json) · [dark](reports/TASK-FA-01-dark.json) |
+| TASK-FA-02 | FA | OK (90 ms) | OK (91 ms) | [light](reports/TASK-FA-02-light.json) · [dark](reports/TASK-FA-02-dark.json) |
+| TASK-FA-03 | FA | OK (98 ms) | OK (89 ms) | [light](reports/TASK-FA-03-light.json) · [dark](reports/TASK-FA-03-dark.json) |
+| TASK-FA-04 | FA | OK (97 ms) | OK (91 ms) | [light](reports/TASK-FA-04-light.json) · [dark](reports/TASK-FA-04-dark.json) |
+| TASK-FA-05 | FA | OK (118 ms) | OK (134 ms) | [light](reports/TASK-FA-05-light.json) · [dark](reports/TASK-FA-05-dark.json) |
+| TASK-FA-06 | FA | OK (127 ms) | OK (134 ms) | [light](reports/TASK-FA-06-light.json) · [dark](reports/TASK-FA-06-dark.json) |
+| TASK-FA-07 | FA | OK (90 ms) | OK (117 ms) | [light](reports/TASK-FA-07-light.json) · [dark](reports/TASK-FA-07-dark.json) |
+| TASK-FA-08 | FA | OK (40 ms) | OK (39 ms) | [light](reports/TASK-FA-08-light.json) · [dark](reports/TASK-FA-08-dark.json) |

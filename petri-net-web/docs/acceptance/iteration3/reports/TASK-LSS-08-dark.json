@@ -1,0 +1,33 @@
+{
+ "answer": {
+  "phi": "1/(s + 5)",
+  "phi_tex": "\\frac{1}{s + 5}"
+ },
+ "find": [
+  "Φ(s)"
+ ],
+ "given": {
+  "spec": {
+   "a": [
+    1,
+    5
+   ],
+   "kind": "transfer"
+  },
+  "statement": "Найти передаточную функцию системы y'(t) + 5y(t) = x(t).",
+  "statement_tex": "y^{\\prime}(t) + 5y(t) = x(t)"
+ },
+ "notes": [],
+ "solution": [
+  {
+   "data": {
+    "phi": "1/(s + 5)",
+    "phi_tex": "\\frac{1}{s + 5}"
+   },
+   "step": 1,
+   "text": "Подставляем x(t) = e^{st}, y(t) = Φ(s)e^{st}: производные y^(i) дают s^i; e^{st} сокращается ⇒ Φ(s) = 1/(s + 5)",
+   "title": "Передаточная функция (М1)"
+  }
+ ],
+ "task_id": "TASK-LSS-08"
+}

@@ -1,0 +1,34 @@
+{
+ "answer": {
+  "phi": "1/(s**2 - 3*s + 2)",
+  "phi_tex": "\\frac{1}{s^{2} - 3 s + 2}"
+ },
+ "find": [
+  "Φ(s)"
+ ],
+ "given": {
+  "spec": {
+   "a": [
+    1,
+    -3,
+    2
+   ],
+   "kind": "transfer"
+  },
+  "statement": "Найти передаточную функцию системы y''(t) − 3y'(t) + 2y(t) = x(t).",
+  "statement_tex": "y^{\\prime\\prime}(t) - 3y^{\\prime}(t) + 2y(t) = x(t)"
+ },
+ "notes": [],
+ "solution": [
+  {
+   "data": {
+    "phi": "1/(s**2 - 3*s + 2)",
+    "phi_tex": "\\frac{1}{s^{2} - 3 s + 2}"
+   },
+   "step": 1,
+   "text": "Подставляем x(t) = e^{st}, y(t) = Φ(s)e^{st}: производные y^(i) дают s^i; e^{st} сокращается ⇒ Φ(s) = 1/(s**2 - 3*s + 2)",
+   "title": "Передаточная функция (М1)"
+  }
+ ],
+ "task_id": "TASK-LSS-09"
+}

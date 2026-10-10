@@ -336,7 +336,10 @@ def _solve_ode(
     return {
         "P": sp.factor(poly),
         "roots": {str(r): m for r, m in roots.items()},
-        "roots_tex": {sp.latex(r): m for r, m in roots.items()},
+        "roots_tex": ",\\;".join(
+            f"{sp.latex(r)}\\;(^{m})" if m > 1 else sp.latex(r)
+            for r, m in roots.items()
+        ),
         "y_h": sp.simplify(y_h),
         "y_p": y_p_fixed,
         "y": y_final,

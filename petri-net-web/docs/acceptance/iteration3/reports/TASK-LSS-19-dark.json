@@ -1,0 +1,47 @@
+{
+ "answer": {
+  "g": "exp(-h*(t - tau)/J)/J",
+  "g_tex": "\\frac{e^{- \\frac{h \\left(t - \\tau\\right)}{J}}}{J}"
+ },
+ "find": [
+  "g(t, τ) = (1/J)e^{−(h/J)(t−τ)}",
+  "стационарность"
+ ],
+ "given": {
+  "spec": {
+   "a": [
+    "J",
+    "h"
+   ],
+   "gain": 1,
+   "kind": "impulse"
+  },
+  "statement": "Двигатель: Jω̇ = M − hω, вход M, выход ω, J = const. Найти весовую; стационарна ли система.",
+  "statement_tex": "J\\dot{\\omega} = M - h\\,\\omega, \\quad J = \\mathrm{const}"
+ },
+ "notes": [
+  "однородное решение C·e^{{−(a0/a1)·t}}, вариация постоянной: C(t) = (gain/a1)·e^{{(a0/a1)·t}} ⇒ g(t,τ) = (gain/a1)·e^{{−(a0/a1)(t−τ)}}"
+ ],
+ "solution": [
+  {
+   "data": {
+    "g": "exp(-h*(t - tau)/J)/J",
+    "g_tex": "\\frac{e^{- \\frac{h \\left(t - \\tau\\right)}{J}}}{J}"
+   },
+   "step": 1,
+   "text": "однородное решение C·e^{{−(a0/a1)·t}}, вариация постоянной: C(t) = (gain/a1)·e^{{(a0/a1)·t}} ⇒ g(t,τ) = (gain/a1)·e^{{−(a0/a1)(t−τ)}}",
+   "title": "Весовая функция (М2/М3: вход δ(t−τ), вариация постоянной)"
+  },
+  {
+   "data": {
+    "g": "exp(-h*(t - tau)/J)/J",
+    "g_tex": "\\frac{e^{- \\frac{h \\left(t - \\tau\\right)}{J}}}{J}",
+    "stationary": true
+   },
+   "step": 2,
+   "text": "система стационарна: g зависит только от t − τ. g(t,τ) = exp(-h*(t - tau)/J)/J",
+   "title": "Ответ"
+  }
+ ],
+ "task_id": "TASK-LSS-19"
+}

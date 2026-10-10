@@ -1,0 +1,48 @@
+{
+ "answer": {
+  "g": "-k*(exp((t - tau)*(T*xi - sqrt(T**2*(xi**2 - 1)))/T**2) - exp((t - tau)*(T*xi + sqrt(T**2*(xi**2 - 1)))/T**2))*exp(-2*xi*(t - tau)/T)/(2*sqrt(T**2*(xi**2 - 1)))",
+  "g_tex": "- \\frac{k \\left(e^{\\frac{\\left(t - \\tau\\right) \\left(T \\xi - \\sqrt{T^{2} \\left(\\xi^{2} - 1\\right)}\\right)}{T^{2}}} - e^{\\frac{\\left(t - \\tau\\right) \\left(T \\xi + \\sqrt{T^{2} \\left(\\xi^{2} - 1\\right)}\\right)}{T^{2}}}\\right) e^{- \\frac{2 \\xi \\left(t - \\tau\\right)}{T}}}{2 \\sqrt{T^{2} \\left(\\xi^{2} - 1\\right)}}"
+ },
+ "find": [
+  "g(t) = 1/(T√(1−ξ²))·e^{−ξt/T}·sin(√(1−ξ²)·t/T)"
+ ],
+ "given": {
+  "spec": {
+   "a": [
+    "T**2",
+    "2*T*xi",
+    1
+   ],
+   "gain": "k",
+   "kind": "impulse"
+  },
+  "statement": "T²y'' + 2Tξy' + y = ku(t), 0 < ξ < 1: найти весовую функцию.",
+  "statement_tex": "T^{2} y''(t) + 2T\\xi\\,y'(t) + y(t) = k\\,u(t), \\quad 0 < \\xi < 1"
+ },
+ "notes": [
+  "характеристические корни λ1,2 = (−a1 ± √(a1²−4a0a2))/(2a0); для δ-входа: g(0) = 0, g′(0) = gain/a2",
+  "формально полученный вид sinh(√(ξ²−1)·u/T)/√(ξ²−1) при 0<ξ<1 эквивалентен sin(√(1−ξ²)·u/T)/√(1−ξ²) (√(ξ²−1) = i·√(1−ξ²)) — эталон методички TASK-LSS-20"
+ ],
+ "solution": [
+  {
+   "data": {
+    "g": "-k*(exp((t - tau)*(T*xi - sqrt(T**2*(xi**2 - 1)))/T**2) - exp((t - tau)*(T*xi + sqrt(T**2*(xi**2 - 1)))/T**2))*exp(-2*xi*(t - tau)/T)/(2*sqrt(T**2*(xi**2 - 1)))",
+    "g_tex": "- \\frac{k \\left(e^{\\frac{\\left(t - \\tau\\right) \\left(T \\xi - \\sqrt{T^{2} \\left(\\xi^{2} - 1\\right)}\\right)}{T^{2}}} - e^{\\frac{\\left(t - \\tau\\right) \\left(T \\xi + \\sqrt{T^{2} \\left(\\xi^{2} - 1\\right)}\\right)}{T^{2}}}\\right) e^{- \\frac{2 \\xi \\left(t - \\tau\\right)}{T}}}{2 \\sqrt{T^{2} \\left(\\xi^{2} - 1\\right)}}"
+   },
+   "step": 1,
+   "text": "характеристические корни λ1,2 = (−a1 ± √(a1²−4a0a2))/(2a0); для δ-входа: g(0) = 0, g′(0) = gain/a2",
+   "title": "Весовая функция (М2/М3: вход δ(t−τ), вариация постоянной)"
+  },
+  {
+   "data": {
+    "g": "-k*(exp((t - tau)*(T*xi - sqrt(T**2*(xi**2 - 1)))/T**2) - exp((t - tau)*(T*xi + sqrt(T**2*(xi**2 - 1)))/T**2))*exp(-2*xi*(t - tau)/T)/(2*sqrt(T**2*(xi**2 - 1)))",
+    "g_tex": "- \\frac{k \\left(e^{\\frac{\\left(t - \\tau\\right) \\left(T \\xi - \\sqrt{T^{2} \\left(\\xi^{2} - 1\\right)}\\right)}{T^{2}}} - e^{\\frac{\\left(t - \\tau\\right) \\left(T \\xi + \\sqrt{T^{2} \\left(\\xi^{2} - 1\\right)}\\right)}{T^{2}}}\\right) e^{- \\frac{2 \\xi \\left(t - \\tau\\right)}{T}}}{2 \\sqrt{T^{2} \\left(\\xi^{2} - 1\\right)}}",
+    "stationary": true
+   },
+   "step": 2,
+   "text": "система стационарна: g зависит только от t − τ. g(t,τ) = -k*(exp((t - tau)*(T*xi - sqrt(T**2*(xi**2 - 1)))/T**2) - exp((t - tau)*(T*xi + sqrt(T**2*(xi**2 - 1)))/T**2))*exp(-2*xi*(t - tau)/T)/(2*sqrt(T**2*(xi**2 - 1)))",
+   "title": "Ответ"
+  }
+ ],
+ "task_id": "TASK-LSS-20"
+}

@@ -1,0 +1,24 @@
+{
+  "generated_at": "2026-10-10T00:19:05+00:00",
+  "base_url": "http://app:8000",
+  "total": 142,
+  "ok": 142,
+  "failed": [],
+  "no_katex_lss": [],
+  "timings": {
+    "n": 142,
+    "min": 37,
+    "max": 1322,
+    "p95": 209
+  },
+  "screenshots": [
+    "screenshots/TASK-FA-03-dark.png",
+    "screenshots/TASK-FA-03-light.png",
+    "screenshots/TASK-LSS-14-dark.png",
+    "screenshots/TASK-LSS-14-light.png",
+    "screenshots/TASK-LSS-23-dark.png",
+    "screenshots/TASK-PN-05-dark.png",
+    "screenshots/TASK-PN-05-light.png",
+    "screenshots/TASK-PN-27-light.png"
+  ]
+}

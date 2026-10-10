@@ -1,0 +1,83 @@
+{
+ "answer": {
+  "P": "s**2 + 1",
+  "P_tex": "s^{2} + 1",
+  "y": "sin(t) + 2*cos(t)/3 - 2*cos(2*t)/3",
+  "y_h": "C_1*cos(t) + C_2*sin(t)",
+  "y_h_tex": "C_{1} \\cos{\\left(t \\right)} + C_{2} \\sin{\\left(t \\right)}",
+  "y_p": "-2*cos(2*t)/3",
+  "y_p_tex": "- \\frac{2 \\cos{\\left(2 t \\right)}}{3}",
+  "y_tex": "\\sin{\\left(t \\right)} + \\frac{2 \\cos{\\left(t \\right)}}{3} - \\frac{2 \\cos{\\left(2 t \\right)}}{3}"
+ },
+ "find": [
+  "y(t): частное A·sin 2t + B·cos 2t"
+ ],
+ "given": {
+  "spec": {
+   "a": [
+    1,
+    0,
+    1
+   ],
+   "ics": [
+    0,
+    1
+   ],
+   "kind": "ode",
+   "rhs": [
+    {
+     "scale": 2,
+     "type": "cos",
+     "w": 2
+    }
+   ]
+  },
+  "statement": "y'' + y = 2cos 2t, y(0) = 0, y'(0) = 1.",
+  "statement_tex": "y''(t) + y(t) = 2\\cos 2t, \\quad y(0) = 0,\\ y'(0) = 1"
+ },
+ "notes": [],
+ "solution": [
+  {
+   "data": {
+    "P": "s**2 + 1",
+    "P_tex": "s^{2} + 1",
+    "roots": {
+     "-I": 1,
+     "I": 1
+    },
+    "roots_tex": "- i,\\;i"
+   },
+   "step": 1,
+   "text": "P(s) = s**2 + 1; корни: -I (кратность 1), I (кратность 1)",
+   "title": "Характеристический многочлен и корни (М4, Таблица 1)"
+  },
+  {
+   "data": {
+    "y_h": "C_1*cos(t) + C_2*sin(t)",
+    "y_h_tex": "C_{1} \\cos{\\left(t \\right)} + C_{2} \\sin{\\left(t \\right)}"
+   },
+   "step": 2,
+   "text": "y_о(t) = C_1*cos(t) + C_2*sin(t)",
+   "title": "Однородное решение"
+  },
+  {
+   "data": {
+    "y_p": "-2*cos(2*t)/3",
+    "y_p_tex": "- \\frac{2 \\cos{\\left(2 t \\right)}}{3}"
+   },
+   "step": 3,
+   "text": "Вид частного по правому вычитанию с учётом резонанса (множитель t^k при совпадении с корнем P): y_ч(t) = -2*cos(2*t)/3",
+   "title": "Частное решение (М4, Таблица 2)"
+  },
+  {
+   "data": {
+    "y": "sin(t) + 2*cos(t)/3 - 2*cos(2*t)/3",
+    "y_tex": "\\sin{\\left(t \\right)} + \\frac{2 \\cos{\\left(t \\right)}}{3} - \\frac{2 \\cos{\\left(2 t \\right)}}{3}"
+   },
+   "step": 4,
+   "text": "y(t) = y_о(t) + y_ч(t) = sin(t) + 2*cos(t)/3 - 2*cos(2*t)/3",
+   "title": "Найст констант по начальный условиям и ответ"
+  }
+ ],
+ "task_id": "TASK-LSS-05"
+}

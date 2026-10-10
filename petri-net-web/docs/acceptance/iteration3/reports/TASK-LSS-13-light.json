@@ -1,0 +1,247 @@
+{
+ "answer": {
+  "links": [
+   {
+    "g": "DiracDelta(t - tau)",
+    "g_tex": "\\delta\\left(t - \\tau\\right)",
+    "law": "y(t) = x(t)",
+    "law_tex": "y(t) = x(t)",
+    "name": "following",
+    "phi": "1",
+    "phi_tex": "1",
+    "title": "идеальная следящая система"
+   },
+   {
+    "g": "DiracDelta(a + t - tau)",
+    "g_tex": "\\delta\\left(a + t - \\tau\\right)",
+    "law": "y(t) = x(t + a)",
+    "law_tex": "y(t) = x(t + a)",
+    "name": "extrapolator",
+    "phi": "exp(a*s)",
+    "phi_tex": "e^{a s}",
+    "title": "идеальный экстраполятор"
+   },
+   {
+    "g": "DiracDelta(-a + t - tau)",
+    "g_tex": "\\delta\\left(- a + t - \\tau\\right)",
+    "law": "y(t) = x(t - a)",
+    "law_tex": "y(t) = x(t - a)",
+    "name": "delay",
+    "phi": "exp(-a*s)",
+    "phi_tex": "e^{- a s}",
+    "title": "идеальное запаздывающее звено"
+   },
+   {
+    "g": "k*DiracDelta(t - tau)",
+    "g_tex": "k \\delta\\left(t - \\tau\\right)",
+    "law": "y(t) = k·x(t)",
+    "law_tex": "y(t) = k\\,x(t)",
+    "name": "amplifier",
+    "phi": "k",
+    "phi_tex": "k",
+    "title": "безынерционный усилитель"
+   },
+   {
+    "g": "DiracDelta(t - tau, 1)",
+    "g_tex": "\\delta^{\\left( 1 \\right)}\\left( t - \\tau \\right)",
+    "law": "y(t) = x′(t)",
+    "law_tex": "y(t) = x'(t)",
+    "name": "differentiator",
+    "phi": "s",
+    "phi_tex": "s",
+    "title": "идеальное дифференцирующее звено"
+   },
+   {
+    "g": "Heaviside(t - tau)",
+    "g_tex": "\\theta\\left(t - \\tau\\right)",
+    "law": "y(t) = ∫x(β)dβ",
+    "law_tex": "y(t) = \\int x(\\beta)\\,d\\beta",
+    "name": "integrator",
+    "phi": "1/s",
+    "phi_tex": "\\frac{1}{s}",
+    "title": "идеальное интегрирующее звено"
+   },
+   {
+    "g": "k*(T*DiracDelta(t - tau, 1) + DiracDelta(t - tau))",
+    "g_tex": "k \\left(T \\delta^{\\left( 1 \\right)}\\left( t - \\tau \\right) + \\delta\\left(t - \\tau\\right)\\right)",
+    "law": "y(t) = k·(T·x′(t) + x(t))",
+    "law_tex": "y(t) = k\\left( T x'(t) + x(t) \\right)",
+    "name": "forcing1",
+    "phi": "k*(T*s + 1)",
+    "phi_tex": "k \\left(T s + 1\\right)",
+    "title": "форсирующее звено 1-го порядка"
+   },
+   {
+    "g": "k*(T**2*DiracDelta(t - tau, 2) + 2*T*a*DiracDelta(t - tau, 1) + DiracDelta(t - tau))",
+    "g_tex": "k \\left(T^{2} \\delta^{\\left( 2 \\right)}\\left( t - \\tau \\right) + 2 T a \\delta^{\\left( 1 \\right)}\\left( t - \\tau \\right) + \\delta\\left(t - \\tau\\right)\\right)",
+    "law": "y(t) = k·(T²·x″(t) + 2α·T·x′(t) + x(t))",
+    "law_tex": "y(t) = k\\left( T^{2} x''(t) + 2\\alpha T x'(t) + x(t) \\right)",
+    "name": "forcing2",
+    "phi": "k*(T**2*s**2 + 2*T*a*s + 1)",
+    "phi_tex": "k \\left(T^{2} s^{2} + 2 T a s + 1\\right)",
+    "title": "форсирующее звено 2-го порядка"
+   },
+   {
+    "g": "k*exp((-t + tau)/T)/T",
+    "g_tex": "\\frac{k e^{\\frac{- t + \\tau}{T}}}{T}",
+    "law": "T·y′(t) + y(t) = k·x(t)",
+    "law_tex": "T y'(t) + y(t) = k x(t)",
+    "name": "aperiodic",
+    "phi": "k/(T*s + 1)",
+    "phi_tex": "\\frac{k}{T s + 1}",
+    "title": "апериодическое звено"
+   },
+   {
+    "g": "k*exp((-t + tau)/T)/T",
+    "g_tex": "\\frac{k e^{\\frac{- t + \\tau}{T}}}{T}",
+    "law": "T·y′(t) + y(t) = k·x(t)",
+    "law_tex": "T y'(t) + y(t) = k x(t)",
+    "name": "harmonic",
+    "phi": "k/(T*s + 1)",
+    "phi_tex": "\\frac{k}{T s + 1}",
+    "title": "гармонические колебания (частный случай апериодического, s = iω)"
+   },
+   {
+    "g": "k*exp(-t*xi/T)*sin(t*sqrt(1 - xi**2)/T)/(T*sqrt(1 - xi**2))",
+    "g_tex": "\\frac{k e^{- \\frac{t \\xi}{T}} \\sin{\\left(\\frac{t \\sqrt{1 - \\xi^{2}}}{T} \\right)}}{T \\sqrt{1 - \\xi^{2}}}",
+    "law": "T²·y″(t) + 2Tξ·y′(t) + y(t) = k·x(t), T > 0, 0 < ξ < 1",
+    "law_tex": "T^{2} y''(t) + 2T\\xi\\,y'(t) + y(t) = k x(t), \\quad T > 0, \\ 0 < \\xi < 1",
+    "name": "oscillatory",
+    "phi": "k/(T**2*s**2 + 2*T*s*xi + 1)",
+    "phi_tex": "\\frac{k}{T^{2} s^{2} + 2 T s \\xi + 1}",
+    "title": "колебательное звено"
+   }
+  ]
+ },
+ "find": [
+  "каталог: 11 звеньев, Φ(s) (и g(t,τ) — ср. TASK-LSS-18)"
+ ],
+ "given": {
+  "spec": {
+   "kind": "links_catalog"
+  },
+  "statement": "Для каждой из 11 стандартных систем — передаточная функция Φ(s).",
+  "statement_tex": "\\Phi(s)"
+ },
+ "notes": [],
+ "solution": [
+  {
+   "data": [
+    {
+     "g": "DiracDelta(t - tau)",
+     "g_tex": "\\delta\\left(t - \\tau\\right)",
+     "law": "y(t) = x(t)",
+     "law_tex": "y(t) = x(t)",
+     "name": "following",
+     "phi": "1",
+     "phi_tex": "1",
+     "title": "идеальная следящая система"
+    },
+    {
+     "g": "DiracDelta(a + t - tau)",
+     "g_tex": "\\delta\\left(a + t - \\tau\\right)",
+     "law": "y(t) = x(t + a)",
+     "law_tex": "y(t) = x(t + a)",
+     "name": "extrapolator",
+     "phi": "exp(a*s)",
+     "phi_tex": "e^{a s}",
+     "title": "идеальный экстраполятор"
+    },
+    {
+     "g": "DiracDelta(-a + t - tau)",
+     "g_tex": "\\delta\\left(- a + t - \\tau\\right)",
+     "law": "y(t) = x(t - a)",
+     "law_tex": "y(t) = x(t - a)",
+     "name": "delay",
+     "phi": "exp(-a*s)",
+     "phi_tex": "e^{- a s}",
+     "title": "идеальное запаздывающее звено"
+    },
+    {
+     "g": "k*DiracDelta(t - tau)",
+     "g_tex": "k \\delta\\left(t - \\tau\\right)",
+     "law": "y(t) = k·x(t)",
+     "law_tex": "y(t) = k\\,x(t)",
+     "name": "amplifier",
+     "phi": "k",
+     "phi_tex": "k",
+     "title": "безынерционный усилитель"
+    },
+    {
+     "g": "DiracDelta(t - tau, 1)",
+     "g_tex": "\\delta^{\\left( 1 \\right)}\\left( t - \\tau \\right)",
+     "law": "y(t) = x′(t)",
+     "law_tex": "y(t) = x'(t)",
+     "name": "differentiator",
+     "phi": "s",
+     "phi_tex": "s",
+     "title": "идеальное дифференцирующее звено"
+    },
+    {
+     "g": "Heaviside(t - tau)",
+     "g_tex": "\\theta\\left(t - \\tau\\right)",
+     "law": "y(t) = ∫x(β)dβ",
+     "law_tex": "y(t) = \\int x(\\beta)\\,d\\beta",
+     "name": "integrator",
+     "phi": "1/s",
+     "phi_tex": "\\frac{1}{s}",
+     "title": "идеальное интегрирующее звено"
+    },
+    {
+     "g": "k*(T*DiracDelta(t - tau, 1) + DiracDelta(t - tau))",
+     "g_tex": "k \\left(T \\delta^{\\left( 1 \\right)}\\left( t - \\tau \\right) + \\delta\\left(t - \\tau\\right)\\right)",
+     "law": "y(t) = k·(T·x′(t) + x(t))",
+     "law_tex": "y(t) = k\\left( T x'(t) + x(t) \\right)",
+     "name": "forcing1",
+     "phi": "k*(T*s + 1)",
+     "phi_tex": "k \\left(T s + 1\\right)",
+     "title": "форсирующее звено 1-го порядка"
+    },
+    {
+     "g": "k*(T**2*DiracDelta(t - tau, 2) + 2*T*a*DiracDelta(t - tau, 1) + DiracDelta(t - tau))",
+     "g_tex": "k \\left(T^{2} \\delta^{\\left( 2 \\right)}\\left( t - \\tau \\right) + 2 T a \\delta^{\\left( 1 \\right)}\\left( t - \\tau \\right) + \\delta\\left(t - \\tau\\right)\\right)",
+     "law": "y(t) = k·(T²·x″(t) + 2α·T·x′(t) + x(t))",
+     "law_tex": "y(t) = k\\left( T^{2} x''(t) + 2\\alpha T x'(t) + x(t) \\right)",
+     "name": "forcing2",
+     "phi": "k*(T**2*s**2 + 2*T*a*s + 1)",
+     "phi_tex": "k \\left(T^{2} s^{2} + 2 T a s + 1\\right)",
+     "title": "форсирующее звено 2-го порядка"
+    },
+    {
+     "g": "k*exp((-t + tau)/T)/T",
+     "g_tex": "\\frac{k e^{\\frac{- t + \\tau}{T}}}{T}",
+     "law": "T·y′(t) + y(t) = k·x(t)",
+     "law_tex": "T y'(t) + y(t) = k x(t)",
+     "name": "aperiodic",
+     "phi": "k/(T*s + 1)",
+     "phi_tex": "\\frac{k}{T s + 1}",
+     "title": "апериодическое звено"
+    },
+    {
+     "g": "k*exp((-t + tau)/T)/T",
+     "g_tex": "\\frac{k e^{\\frac{- t + \\tau}{T}}}{T}",
+     "law": "T·y′(t) + y(t) = k·x(t)",
+     "law_tex": "T y'(t) + y(t) = k x(t)",
+     "name": "harmonic",
+     "phi": "k/(T*s + 1)",
+     "phi_tex": "\\frac{k}{T s + 1}",
+     "title": "гармонические колебания (частный случай апериодического, s = iω)"
+    },
+    {
+     "g": "k*exp(-t*xi/T)*sin(t*sqrt(1 - xi**2)/T)/(T*sqrt(1 - xi**2))",
+     "g_tex": "\\frac{k e^{- \\frac{t \\xi}{T}} \\sin{\\left(\\frac{t \\sqrt{1 - \\xi^{2}}}{T} \\right)}}{T \\sqrt{1 - \\xi^{2}}}",
+     "law": "T²·y″(t) + 2Tξ·y′(t) + y(t) = k·x(t), T > 0, 0 < ξ < 1",
+     "law_tex": "T^{2} y''(t) + 2T\\xi\\,y'(t) + y(t) = k x(t), \\quad T > 0, \\ 0 < \\xi < 1",
+     "name": "oscillatory",
+     "phi": "k/(T**2*s**2 + 2*T*s*xi + 1)",
+     "phi_tex": "\\frac{k}{T^{2} s^{2} + 2 T s \\xi + 1}",
+     "title": "колебательное звено"
+    }
+   ],
+   "step": 1,
+   "text": "Для каждого звена: закон «вход-выход» и Φ(s) (подстановка x = e^{st}).",
+   "title": "Каталог 11 стандартных звеньев (М1)"
+  }
+ ],
+ "task_id": "TASK-LSS-13"
+}

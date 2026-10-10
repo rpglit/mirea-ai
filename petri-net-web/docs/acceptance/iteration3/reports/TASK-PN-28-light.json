@@ -1,0 +1,204 @@
+{
+ "answer": {
+  "analytic": {
+   "I": {
+    "t1": [
+     [
+      "p1",
+      1
+     ]
+    ],
+    "t2": [
+     [
+      "p2",
+      1
+     ]
+    ]
+   },
+   "O": {
+    "t1": [
+     [
+      "p2",
+      1
+     ]
+    ],
+    "t2": [
+     [
+      "p1",
+      1
+     ]
+    ]
+   },
+   "P": [
+    "p1",
+    "p2"
+   ],
+   "T": [
+    "t1",
+    "t2"
+   ],
+   "mu": [
+    1,
+    0
+   ]
+  },
+  "classification": {
+   "bounded": true,
+   "conservative": true,
+   "constant_sum": true,
+   "dead_transitions": [],
+   "deadlock_count": 0,
+   "deadlocks": [],
+   "home_state": true,
+   "k": 1,
+   "liveness_level": "L4",
+   "per_place_k": {
+    "p1": 1,
+    "p2": 1
+   },
+   "per_transition": {
+    "t1": {
+     "level": "L4",
+     "occurs": true
+    },
+    "t2": {
+     "level": "L4",
+     "occurs": true
+    }
+   },
+   "safe": true,
+   "stats": {
+    "edges": 2,
+    "nodes": 2
+   },
+   "structure": "graph",
+   "verdict": "живая",
+   "verdict_justification": "все переходы живые (уровень L4): каждый может срабатывать бесконечно часто"
+  }
+ },
+ "find": [
+  "тип: живая, безопасная, консервативная — с обоснованием"
+ ],
+ "given": {
+  "net": {
+   "initial_marking": {
+    "p1": 1,
+    "p2": 0
+   },
+   "inputs": {
+    "t1": {
+     "p1": 1
+    },
+    "t2": {
+     "p2": 1
+    }
+   },
+   "outputs": {
+    "t1": {
+     "p2": 1
+    },
+    "t2": {
+     "p1": 1
+    }
+   },
+   "places": [
+    "p1",
+    "p2"
+   ],
+   "transitions": [
+    "t1",
+    "t2"
+   ]
+  },
+  "statement": "Цикл p1→t1→p2→t2→p1; µ = (1,0)."
+ },
+ "notes": [],
+ "solution": [
+  {
+   "data": {
+    "I": {
+     "t1": [
+      [
+       "p1",
+       1
+      ]
+     ],
+     "t2": [
+      [
+       "p2",
+       1
+      ]
+     ]
+    },
+    "O": {
+     "t1": [
+      [
+       "p2",
+       1
+      ]
+     ],
+     "t2": [
+      [
+       "p1",
+       1
+      ]
+     ]
+    },
+    "P": [
+     "p1",
+     "p2"
+    ],
+    "T": [
+     "t1",
+     "t2"
+    ],
+    "mu": [
+     1,
+     0
+    ]
+   },
+   "step": 1,
+   "text": "S = (P, T, I, O, µ); I/O — множества дуг с кратностями.",
+   "title": "Аналитическое описание"
+  },
+  {
+   "data": {
+    "bounded": true,
+    "conservative": true,
+    "constant_sum": true,
+    "dead_transitions": [],
+    "deadlock_count": 0,
+    "deadlocks": [],
+    "home_state": true,
+    "k": 1,
+    "liveness_level": "L4",
+    "per_place_k": {
+     "p1": 1,
+     "p2": 1
+    },
+    "per_transition": {
+     "t1": {
+      "level": "L4",
+      "occurs": true
+     },
+     "t2": {
+      "level": "L4",
+      "occurs": true
+     }
+    },
+    "safe": true,
+    "stats": {
+     "edges": 2,
+     "nodes": 2
+    },
+    "structure": "graph",
+    "verdict": "живая",
+    "verdict_justification": "все переходы живые (уровень L4): каждый может срабатывать бесконечно часто"
+   },
+   "step": 2,
+   "text": "Вердикт: живая — все переходы живые (уровень L4): каждый может срабатывать бесконечно часто. Ограниченность: k = 1. Безопасная: да. Консервативная: да. Тупиков: 0, маркировок: 2.",
+   "title": "Классификация (M5)"
+  }
+ ],
+ "task_id": "TASK-PN-28"
+}

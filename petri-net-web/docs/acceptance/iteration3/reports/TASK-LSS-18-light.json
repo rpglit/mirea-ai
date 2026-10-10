@@ -1,0 +1,99 @@
+{
+ "answer": {
+  "links": [
+   {
+    "g": "DiracDelta(t - tau)",
+    "g_tex": "\\delta\\left(t - \\tau\\right)",
+    "name": "following",
+    "title": "идеальная следящая система"
+   },
+   {
+    "g": "DiracDelta(a + t - tau)",
+    "g_tex": "\\delta\\left(a + t - \\tau\\right)",
+    "name": "extrapolator",
+    "title": "идеальный экстраполятор"
+   },
+   {
+    "g": "DiracDelta(-a + t - tau)",
+    "g_tex": "\\delta\\left(- a + t - \\tau\\right)",
+    "name": "delay",
+    "title": "идеальное запаздывающее звено"
+   },
+   {
+    "g": "k*DiracDelta(t - tau)",
+    "g_tex": "k \\delta\\left(t - \\tau\\right)",
+    "name": "amplifier",
+    "title": "безынерционный усилитель"
+   },
+   {
+    "g": "DiracDelta(t - tau, 1)",
+    "g_tex": "\\delta^{\\left( 1 \\right)}\\left( t - \\tau \\right)",
+    "name": "differentiator",
+    "title": "идеальное дифференцирующее звено"
+   },
+   {
+    "g": "Heaviside(t - tau)",
+    "g_tex": "\\theta\\left(t - \\tau\\right)",
+    "name": "integrator",
+    "title": "идеальное интегрирующее звено"
+   }
+  ]
+ },
+ "find": [
+  "g(t,τ) для: следящей, экстраполатора, запаздывающего, усилителя, дифференцирующего, интегрирующего"
+ ],
+ "given": {
+  "spec": {
+   "kind": "links_impulse"
+  },
+  "statement": "Подать на вход δ-функцию: найти g(t,τ) для 6 идеальных систем.",
+  "statement_tex": "\\delta(t) \\to g(t, \\tau)"
+ },
+ "notes": [],
+ "solution": [
+  {
+   "data": [
+    {
+     "g": "DiracDelta(t - tau)",
+     "g_tex": "\\delta\\left(t - \\tau\\right)",
+     "name": "following",
+     "title": "идеальная следящая система"
+    },
+    {
+     "g": "DiracDelta(a + t - tau)",
+     "g_tex": "\\delta\\left(a + t - \\tau\\right)",
+     "name": "extrapolator",
+     "title": "идеальный экстраполятор"
+    },
+    {
+     "g": "DiracDelta(-a + t - tau)",
+     "g_tex": "\\delta\\left(- a + t - \\tau\\right)",
+     "name": "delay",
+     "title": "идеальное запаздывающее звено"
+    },
+    {
+     "g": "k*DiracDelta(t - tau)",
+     "g_tex": "k \\delta\\left(t - \\tau\\right)",
+     "name": "amplifier",
+     "title": "безынерционный усилитель"
+    },
+    {
+     "g": "DiracDelta(t - tau, 1)",
+     "g_tex": "\\delta^{\\left( 1 \\right)}\\left( t - \\tau \\right)",
+     "name": "differentiator",
+     "title": "идеальное дифференцирующее звено"
+    },
+    {
+     "g": "Heaviside(t - tau)",
+     "g_tex": "\\theta\\left(t - \\tau\\right)",
+     "name": "integrator",
+     "title": "идеальное интегрирующее звено"
+    }
+   ],
+   "step": 1,
+   "text": "Все идеальные линейные системы стационарны: g зависит только от t − τ.",
+   "title": "Весовые функции 6 идеальных систем (М3: вход δ)"
+  }
+ ],
+ "task_id": "TASK-LSS-18"
+}

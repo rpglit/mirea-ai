@@ -203,8 +203,15 @@ function stepDataEntries(step) {
       );
     } else if (Array.isArray(val) && val.length && val.every((x) => typeof x === "number" || x === null)) {
       out.push({ key, kind: "formula", tex: markingToTex(val) });
+    } else if (
+      Array.isArray(val) && val.length && val.every((x) => typeof x === "string") &&
+      Array.isArray(tex) && tex.length === val.length && tex.every((x) => typeof x === "string")
+    ) {
+      out.push({ key, kind: "formula-list", rows: tex });
     } else if (val !== null && typeof val === "object" && !Array.isArray(val)) {
-      if (
+      if (typeof tex === "string" && tex.length) {
+        out.push({ key, kind: "formula", tex });
+      } else if (
         tex && typeof tex === "object" && !Array.isArray(tex) &&
         Object.keys(val).every((k2) => typeof val[k2] === "number" || typeof val[k2] === "string")
       ) {
@@ -213,7 +220,7 @@ function stepDataEntries(step) {
           kind: "dict-formula",
           rows: Object.keys(val).map((k2) => ({
             k: k2,
-            tex: tex[k2] !== undefined ? tex[k2] : null,
+            tex: typeof tex[k2] === "string" ? tex[k2] : null,
             v: val[k2],
           })),
         });
@@ -339,6 +346,10 @@ async function exportAutomatonPng() {
               <div class="answer-key">{{ entry.key }}</div>
               <Formula :tex="entry.tex" display />
             </div>
+            <div v-else-if="entry.kind === 'formula-list'" class="data-entry">
+              <div class="answer-key">{{ entry.key }}</div>
+              <Formula v-for="(t, i) in entry.rows" :key="i" :tex="t" display />
+            </div>
             <div v-else-if="entry.kind === 'dict-formula'" class="data-entry">
               <div class="answer-key">{{ entry.key }}</div>
               <table class="data-table">
@@ -387,7 +398,7 @@ async function exportAutomatonPng() {
             <tbody>
               <tr v-for="(r, i) in row.value" :key="i">
                 <td v-for="col in catalogCols" :key="col">
-                  <Formula v-if="r[col + '_tex']" :tex="r[col + '_tex']" />
+                  <Formula v-if="typeof r[col + '_tex'] === 'string'" :tex="r[col + '_tex']" />
                   <template v-else>{{ r[col] === null ? "—" : r[col] }}</template>
                 </td>
               </tr>

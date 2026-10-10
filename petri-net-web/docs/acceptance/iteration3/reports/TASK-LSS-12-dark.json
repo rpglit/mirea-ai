@@ -1,0 +1,77 @@
+{
+ "answer": {
+  "A": "k/sqrt(4*T**2*omega**2*xi**2 + (T**2*omega**2 - 1)**2)",
+  "A_tex": "\\frac{k}{\\sqrt{4 T^{2} \\omega^{2} \\xi^{2} + \\left(T^{2} \\omega^{2} - 1\\right)^{2}}}",
+  "g": "k*exp(-t*xi/T)*sin(t*sqrt(1 - xi**2)/T)/(T*sqrt(1 - xi**2))",
+  "g_tex": "\\frac{k e^{- \\frac{t \\xi}{T}} \\sin{\\left(\\frac{t \\sqrt{1 - \\xi^{2}}}{T} \\right)}}{T \\sqrt{1 - \\xi^{2}}}",
+  "law": "T²·y″(t) + 2Tξ·y′(t) + y(t) = k·x(t), T > 0, 0 < ξ < 1",
+  "law_tex": "T^{2} y''(t) + 2T\\xi\\,y'(t) + y(t) = k x(t), \\quad T > 0, \\ 0 < \\xi < 1",
+  "name": "oscillatory",
+  "phi": "k/(T**2*s**2 + 2*T*s*xi + 1)",
+  "phi_f": "atan(2*T*omega*xi/(T**2*omega**2 - 1))",
+  "phi_f_tex": "\\operatorname{atan}{\\left(\\frac{2 T \\omega \\xi}{T^{2} \\omega^{2} - 1} \\right)}",
+  "phi_tex": "\\frac{k}{T^{2} s^{2} + 2 T s \\xi + 1}",
+  "title": "колебательное звено"
+ },
+ "find": [
+  "Φ(s) = k/(T²s²+2Tξs+1)",
+  "A(ω)",
+  "φ(ω)"
+ ],
+ "given": {
+  "spec": {
+   "kind": "link",
+   "name": "oscillatory",
+   "params": {
+    "T": "T",
+    "k": "k",
+    "xi": "xi"
+   }
+  },
+  "statement": "T²y'' + 2Tξy' + y = kx(t), 0 < ξ < 1: Φ(s), A(ω), φ(ω).",
+  "statement_tex": "T^{2} y''(t) + 2T\\xi\\,y'(t) + y(t) = k\\,x(t), \\quad 0 < \\xi < 1"
+ },
+ "notes": [],
+ "solution": [
+  {
+   "data": {
+    "A": "k/sqrt(4*T**2*omega**2*xi**2 + (T**2*omega**2 - 1)**2)",
+    "A_tex": "\\frac{k}{\\sqrt{4 T^{2} \\omega^{2} \\xi^{2} + \\left(T^{2} \\omega^{2} - 1\\right)^{2}}}",
+    "g": "k*exp(-t*xi/T)*sin(t*sqrt(1 - xi**2)/T)/(T*sqrt(1 - xi**2))",
+    "g_tex": "\\frac{k e^{- \\frac{t \\xi}{T}} \\sin{\\left(\\frac{t \\sqrt{1 - \\xi^{2}}}{T} \\right)}}{T \\sqrt{1 - \\xi^{2}}}",
+    "law": "T²·y″(t) + 2Tξ·y′(t) + y(t) = k·x(t), T > 0, 0 < ξ < 1",
+    "law_tex": "T^{2} y''(t) + 2T\\xi\\,y'(t) + y(t) = k x(t), \\quad T > 0, \\ 0 < \\xi < 1",
+    "name": "oscillatory",
+    "phi": "k/(T**2*s**2 + 2*T*s*xi + 1)",
+    "phi_f": "atan(2*T*omega*xi/(T**2*omega**2 - 1))",
+    "phi_f_tex": "\\operatorname{atan}{\\left(\\frac{2 T \\omega \\xi}{T^{2} \\omega^{2} - 1} \\right)}",
+    "phi_tex": "\\frac{k}{T^{2} s^{2} + 2 T s \\xi + 1}",
+    "title": "колебательное звено"
+   },
+   "step": 1,
+   "text": "закон «вход-выход»: T²·y″(t) + 2Tξ·y′(t) + y(t) = k·x(t), T > 0, 0 < ξ < 1; подстановка М1 ⇒ Φ(s) = k/(T**2*s**2 + 2*T*s*xi + 1)",
+   "title": "Стандартное звено: колебательное звено"
+  },
+  {
+   "data": {
+    "g": "k*exp(-t*xi/T)*sin(t*sqrt(1 - xi**2)/T)/(T*sqrt(1 - xi**2))",
+    "g_tex": "\\frac{k e^{- \\frac{t \\xi}{T}} \\sin{\\left(\\frac{t \\sqrt{1 - \\xi^{2}}}{T} \\right)}}{T \\sqrt{1 - \\xi^{2}}}"
+   },
+   "step": 2,
+   "text": "g(t,τ) = k*exp(-t*xi/T)*sin(t*sqrt(1 - xi**2)/T)/(T*sqrt(1 - xi**2))",
+   "title": "Весовая функция"
+  },
+  {
+   "data": {
+    "A": "k/sqrt(4*T**2*omega**2*xi**2 + (T**2*omega**2 - 1)**2)",
+    "A_tex": "\\frac{k}{\\sqrt{4 T^{2} \\omega^{2} \\xi^{2} + \\left(T^{2} \\omega^{2} - 1\\right)^{2}}}",
+    "phi_f": "atan(2*T*omega*xi/(T**2*omega**2 - 1))",
+    "phi_f_tex": "\\operatorname{atan}{\\left(\\frac{2 T \\omega \\xi}{T^{2} \\omega^{2} - 1} \\right)}"
+   },
+   "step": 3,
+   "text": "АЧХ: A(ω) = k/sqrt(4*T**2*omega**2*xi**2 + (T**2*omega**2 - 1)**2); ФЧХ: φ(ω) = atan(2*T*omega*xi/(T**2*omega**2 - 1))",
+   "title": "Частотные характеристики (s = iω)"
+  }
+ ],
+ "task_id": "TASK-LSS-12"
+}

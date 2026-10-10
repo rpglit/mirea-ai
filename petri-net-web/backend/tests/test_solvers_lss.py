@@ -229,7 +229,7 @@ def test_lss01_ode_tex_fields() -> None:
     steps = solve_lss("TASK-LSS-01").to_dict()["solution"]
     data1 = steps[0]["data"]
     assert data1["roots"] == {"-I": 1, "I": 1}
-    assert data1["roots_tex"] == {"- i": 1, "i": 1}
+    assert data1["roots_tex"] == "- i,\\;i"
     assert steps[1]["data"].get("y_h_tex") == a["y_h_tex"]
     assert steps[2]["data"].get("y_p_tex") == a["y_p_tex"]
     assert steps[3]["data"].get("y_tex") == a["y_tex"]
@@ -244,7 +244,7 @@ def test_lss14_parts_tex() -> None:
     assert part_b["phi_tex"] == sp.latex(sp.sympify(part_b["phi"]))
     assert "\\frac" in part_b["phi_tex"]
     assert "A_tex" in part_b and "phi_f_tex" in part_b
-    assert r["solution"][0]["data"]["roots_tex"] == {"3 - i": 1, "3 + i": 1}
+    assert r["solution"][0]["data"]["roots_tex"] == "3 - i,\\;3 + i"
 
 
 def test_lss11_link_tex_fields() -> None:
@@ -288,6 +288,26 @@ def test_lss23_statespace_tex() -> None:
     assert a["W"] == "1/(s + 1)"  # старый ключ не тронут
     assert a["W_tex"] == "\\frac{1}{s + 1}"
     assert a["x0_equations_tex"] == ["2 x_{1} + x_{2} = 1", "2 x_{1} + x_{2} = -1"]
+
+
+def test_roots_tex_is_string() -> None:
+    def roots_tex(task_id: str, step_idx: int = 0) -> str:
+        steps = solve_lss(task_id).to_dict()["solution"]
+        for i, st in enumerate(steps):
+            data = st.get("data") or {}
+            if "roots" in data:
+                assert i == step_idx, f"{task_id}: шаг {i} != {step_idx}"
+                return data["roots_tex"]
+        raise AssertionError(f"{task_id}: roots не найдены")
+
+    # регрессия приёмки: roots_tex — ОДНА TeX-строка (не dict с int-значениями)
+    assert roots_tex("TASK-LSS-02") == "-1,\\;0"
+    assert roots_tex("TASK-LSS-03") == "-1,\\;0"
+    lss04 = roots_tex("TASK-LSS-04")
+    assert lss04 == "-1\\;(^2)"  # кратность 2 видна
+    assert roots_tex("TASK-LSS-15", step_idx=2) == "-7"
+    for value in (lss04, roots_tex("TASK-LSS-02"), roots_tex("TASK-LSS-15", step_idx=2)):
+        assert isinstance(value, str) and "**" not in value
 
 
 def test_statement_tex_all_tasks() -> None:

@@ -1,0 +1,46 @@
+{
+ "answer": {
+  "g": "k*exp((-t + tau)/T)/T",
+  "g_tex": "\\frac{k e^{\\frac{- t + \\tau}{T}}}{T}"
+ },
+ "find": [
+  "g(t, τ)"
+ ],
+ "given": {
+  "spec": {
+   "a": [
+    "T",
+    1
+   ],
+   "gain": "k",
+   "kind": "impulse"
+  },
+  "statement": "Найти весовую функцию апериодического звена Ty'(t) + y(t) = kx(t) (T, k — const).",
+  "statement_tex": "T y'(t) + y(t) = k\\,x(t), \\quad T, k = \\mathrm{const}"
+ },
+ "notes": [
+  "однородное решение C·e^{{−(a0/a1)·t}}, вариация постоянной: C(t) = (gain/a1)·e^{{(a0/a1)·t}} ⇒ g(t,τ) = (gain/a1)·e^{{−(a0/a1)(t−τ)}}"
+ ],
+ "solution": [
+  {
+   "data": {
+    "g": "k*exp((-t + tau)/T)/T",
+    "g_tex": "\\frac{k e^{\\frac{- t + \\tau}{T}}}{T}"
+   },
+   "step": 1,
+   "text": "однородное решение C·e^{{−(a0/a1)·t}}, вариация постоянной: C(t) = (gain/a1)·e^{{(a0/a1)·t}} ⇒ g(t,τ) = (gain/a1)·e^{{−(a0/a1)(t−τ)}}",
+   "title": "Весовая функция (М2/М3: вход δ(t−τ), вариация постоянной)"
+  },
+  {
+   "data": {
+    "g": "k*exp((-t + tau)/T)/T",
+    "g_tex": "\\frac{k e^{\\frac{- t + \\tau}{T}}}{T}",
+    "stationary": true
+   },
+   "step": 2,
+   "text": "система стационарна: g зависит только от t − τ. g(t,τ) = k*exp((-t + tau)/T)/T",
+   "title": "Ответ"
+  }
+ ],
+ "task_id": "TASK-LSS-07"
+}

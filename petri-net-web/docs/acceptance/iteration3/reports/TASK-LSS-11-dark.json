@@ -1,0 +1,76 @@
+{
+ "answer": {
+  "A": "k/sqrt(T**2*omega**2 + 1)",
+  "A_tex": "\\frac{k}{\\sqrt{T^{2} \\omega^{2} + 1}}",
+  "g": "k*exp((-t + tau)/T)/T",
+  "g_tex": "\\frac{k e^{\\frac{- t + \\tau}{T}}}{T}",
+  "law": "T·y′(t) + y(t) = k·x(t)",
+  "law_tex": "T y'(t) + y(t) = k x(t)",
+  "name": "harmonic",
+  "phi": "k/(T*s + 1)",
+  "phi_f": "-atan(T*omega)",
+  "phi_f_tex": "- \\operatorname{atan}{\\left(T \\omega \\right)}",
+  "phi_tex": "\\frac{k}{T s + 1}",
+  "title": "гармонические колебания (частный случай апериодического, s = iω)"
+ },
+ "find": [
+  "Φ(iω)",
+  "A(ω) = k/√(1+T²ω²)",
+  "φ(ω) = −arctg(Tω)"
+ ],
+ "given": {
+  "spec": {
+   "kind": "link",
+   "name": "harmonic",
+   "params": {
+    "T": "T",
+    "k": "k"
+   }
+  },
+  "statement": "Тy'(t) + y(t) = kx(t) при s = iω: Φ(iω), АЧХ, ФЧХ.",
+  "statement_tex": "T y'(t) + y(t) = k\\,x(t), \\quad s = i\\omega"
+ },
+ "notes": [],
+ "solution": [
+  {
+   "data": {
+    "A": "k/sqrt(T**2*omega**2 + 1)",
+    "A_tex": "\\frac{k}{\\sqrt{T^{2} \\omega^{2} + 1}}",
+    "g": "k*exp((-t + tau)/T)/T",
+    "g_tex": "\\frac{k e^{\\frac{- t + \\tau}{T}}}{T}",
+    "law": "T·y′(t) + y(t) = k·x(t)",
+    "law_tex": "T y'(t) + y(t) = k x(t)",
+    "name": "harmonic",
+    "phi": "k/(T*s + 1)",
+    "phi_f": "-atan(T*omega)",
+    "phi_f_tex": "- \\operatorname{atan}{\\left(T \\omega \\right)}",
+    "phi_tex": "\\frac{k}{T s + 1}",
+    "title": "гармонические колебания (частный случай апериодического, s = iω)"
+   },
+   "step": 1,
+   "text": "закон «вход-выход»: T·y′(t) + y(t) = k·x(t); подстановка М1 ⇒ Φ(s) = k/(T*s + 1)",
+   "title": "Стандартное звено: гармонические колебания (частный случай апериодического, s = iω)"
+  },
+  {
+   "data": {
+    "g": "k*exp((-t + tau)/T)/T",
+    "g_tex": "\\frac{k e^{\\frac{- t + \\tau}{T}}}{T}"
+   },
+   "step": 2,
+   "text": "g(t,τ) = k*exp((-t + tau)/T)/T",
+   "title": "Весовая функция"
+  },
+  {
+   "data": {
+    "A": "k/sqrt(T**2*omega**2 + 1)",
+    "A_tex": "\\frac{k}{\\sqrt{T^{2} \\omega^{2} + 1}}",
+    "phi_f": "-atan(T*omega)",
+    "phi_f_tex": "- \\operatorname{atan}{\\left(T \\omega \\right)}"
+   },
+   "step": 3,
+   "text": "АЧХ: A(ω) = k/sqrt(T**2*omega**2 + 1); ФЧХ: φ(ω) = -atan(T*omega)",
+   "title": "Частотные характеристики (s = iω)"
+  }
+ ],
+ "task_id": "TASK-LSS-11"
+}
